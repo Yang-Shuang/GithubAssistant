@@ -10,3 +10,4 @@ user-config.json
 dist/
 build/
 public/data
+docs/*

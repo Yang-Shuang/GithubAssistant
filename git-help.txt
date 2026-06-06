@@ -1,3 +1,5 @@
+## 由于我的git使用不是很熟练，项目还有大量的MD文件，导致git追踪打包大量数据时经常报错导致无法push，这里记录了一些我常用解决问题的手段。
+
 git 初始化的两种方式
 
 直接init
@@ -30,3 +32,27 @@ git push
 git add data/readmes/[a-b]*
 git commit -m "更新readme ab"
 git push
+
+
+彻底“格式化”本地的 Git 仓库（碎骨重塑）
+
+Remove-Item -Path .git -Force -Recurse
+(请放心，这一步只会删掉坏掉的 Git 缓存，你本地辛辛苦苦写好的 2000 多个代码文件绝对 100% 完好无损！)
+
+git init
+
+git remote add origin git@github.com:Yang-Shuang/GithubAssistant.git
+
+git branch -M main
+
+git add .
+
+git commit -m "Initial commit: perfectly cleaned and initialized"
+
+git push -u origin main --force
+
+
+git ls-tree -r HEAD | findstr "8babcb4"
+git rm --cached "data/readme/Ebazhanov__linkedin-skill-assessments-quizzes.md"
+Remove-Item -Path .git/objects/82/20457ecc6604772c9da0cb92ed41627f970ecd -Force -ErrorAction SilentlyContinue
+git reset --mixed HEAD
