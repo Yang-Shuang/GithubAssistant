@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Reader - Public Viewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="header">
+        <div class="container header-content">
+            <a href="./index.html" class="logo">📚Repos</a>
+            <div class="sort-btn-group" id="sort-buttons">
+                <button class="sort-btn active" data-sort-by="fetched_at" data-sort-order="desc">最新抓取</button>
+                <button class="sort-btn" data-sort-by="fetched_at" data-sort-order="asc">最早抓取</button>
+                <button class="sort-btn" data-sort-by="stars" data-sort-order="desc">最多星标</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 仓库列表 -->
+    <main class="container">
+        <div id="repo-list" class="repo-list">
+            <div class="loading">加载中...</div>
+        </div>
+
+        <!-- 分页组件 -->
+        <div class="pagination container" id="pagination"></div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

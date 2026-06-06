@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Reader - Detail</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="header">
+        <div class="container header-content">
+            <a href="./index.html" class="back-link">← 返回</a>
+            <h1 id="repo-name" class="detail-title"></h1>
+        </div>
+    </header>
+
+    <!-- 详情内容 -->
+    <main class="container detail-container">
+        <!-- 侧边栏：信息卡片 + Tab -->
+        <aside class="sidebar-panel">
+            <section class="info-card">
+                <p id="repo-desc" class="info-desc"></p>
+                <div class="info-meta">
+                    <span id="repo-stars" class="meta-star"></span>
+                    <span id="repo-lang" class="meta-lang"></span>
+                    <a id="repo-link" target="_blank" class="github-link">GitHub →</a>
+                </div>
+            </section>
+
+            <!-- README切换Tab -->
+            <div class="readme-tabs" id="readme-tabs">
+                <button class="tab-btn active" data-lang="zh">中文</button>
+                <button class="tab-btn" data-lang="en">English</button>
+            </div>
+        </aside>
+
+        <!-- README内容区 -->
+        <section class="readme-content" id="readme-content">
+            <div class="loading">加载中...</div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

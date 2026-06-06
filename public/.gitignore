@@ -1,0 +1,2 @@
+# GitHub Reader Public Viewer - Only ignore Python cache
+__pycache__/

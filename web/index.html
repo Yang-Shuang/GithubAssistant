@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>GitHub Reader - 收件箱</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>📥 GitHub Reader</h1>
+        <div class="nav">
+            <a href="/">收件箱</a>
+            <a href="/search.html" target="_blank">管理</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="action-bar">
+            <span id="unread-count" style="color: #666; font-size: 14px;">未读：0</span>
+            <div class="action-bar-group">
+                <button class="filter-btn active" id="filter-all">全部</button>
+                <button class="filter-btn" id="filter-read">已读</button>
+                <button class="filter-btn" id="filter-unread">未读</button>
+            </div>
+            <div class="action-bar-group action-bar-group-right">
+                <button class="filter-btn active" id="sort-time">最新抓取</button>
+                <button class="filter-btn" id="sort-time-asc">最早抓取</button>
+                <button class="filter-btn" id="sort-stars">最多星标</button>
+            </div>
+        </div>
+        
+        <div class="repo-list" id="repo-list">
+            <div class="loading">加载中...</div>
+        </div>
+        
+        <div class="pagination" id="pagination"></div>
+    </div>
+    
+    <script src="/app.js"></script>
+</body>
+</html>

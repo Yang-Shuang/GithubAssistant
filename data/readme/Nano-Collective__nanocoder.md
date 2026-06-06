@@ -1,0 +1,71 @@
+# Nanocoder
+
+Built by the [Nano Collective](https://nanocollective.org) — a community collective building AI tooling not for profit, but for the community.
+
+Nanocoder brings agentic coding tools like Claude Code and Gemini CLI to the model of your choice — local models via Ollama, or any OpenAI-compatible API such as OpenRouter, Anthropic, and Google. You decide which provider runs your code and where your data goes. Every tool the collective ships aims to be **privacy-respecting**, **local-first**, and **open for all**: no closed-source features, no paid tiers gating the useful parts.
+
+![Example](./.github/assets/example-preview.gif)
+
+---
+![Build Status](https://github.com/Nano-Collective/nanocoder/raw/main/badges/build.svg)
+![Coverage](https://github.com/Nano-Collective/nanocoder/raw/main/badges/coverage.svg)
+![Version](https://github.com/Nano-Collective/nanocoder/raw/main/badges/npm-version.svg)
+![NPM Downloads](https://github.com/Nano-Collective/nanocoder/raw/main/badges/npm-downloads-monthly.svg)
+![NPM License](https://github.com/Nano-Collective/nanocoder/raw/main/badges/npm-license.svg)
+![Repo Size](https://github.com/Nano-Collective/nanocoder/raw/main/badges/repo-size.svg)
+![Stars](https://github.com/Nano-Collective/nanocoder/raw/main/badges/stars.svg)
+![Forks](https://github.com/Nano-Collective/nanocoder/raw/main/badges/forks.svg)
+
+## Quick Start
+
+```bash
+npm install -g @nanocollective/nanocoder
+nanocoder
+```
+
+Also available via [Homebrew](docs/getting-started/installation.md#homebrew-macoslinux) and [Nix Flakes](docs/getting-started/installation.md#nix-flakes).
+
+### CLI Flags
+
+Specify provider, model, and starting mode directly:
+
+```bash
+# Non-interactive mode with specific provider/model
+nanocoder --provider openrouter --model google/gemini-3.1-flash run "analyze src/app.ts"
+
+# Interactive mode starting with specific provider
+nanocoder --provider ollama --model llama3.1
+
+# Flags can appear before or after 'run' command
+nanocoder run --provider openrouter "refactor database module"
+
+# Boot directly into a development mode (normal, auto-accept, yolo, plan)
+nanocoder --mode yolo
+nanocoder --mode plan run "audit the auth module"
+```
+
+## Documentation
+
+Full documentation is available online at **[docs.nanocollective.org](https://docs.nanocollective.org/nanocoder/docs)** or in the [docs/](docs/) folder:
+
+- **[Getting Started](docs/getting-started/index.md)** - Installation, setup, and first steps
+- **[Configuration](docs/configuration/index.md)** - AI providers, MCP servers, preferences, logging, timeouts
+- **[Features](docs/features/index.md)** - Skills (commands, subagents, tools, event triggers), the per-project daemon, checkpointing, development modes, task management, and more
+- **[Commands Reference](docs/features/commands.md)** - Complete list of built-in slash commands
+- **[Keyboard Shortcuts](docs/features/keyboard-shortcuts.md)** - Full shortcut reference
+- **[Community](docs/community.md)** - Contributing, Discord, and how to help
+
+## Why a collective
+
+Nanocoder is built by the Nano Collective rather than a company, and that shapes the tool itself. There are no paid tiers, no telemetry quietly shipping your prompts somewhere, and no roadmap steered by what monetises best — the people building it are the people using it. Building in the open as a collective means the harness stays multi-provider on principle: you are never locked to one vendor's model, and the conventions, tests, and release standards are shared across every Nano Collective project so the work stays legible and contributable.
+
+It is also bigger than one tool. The collective is assembling an open ecosystem of AI tooling — see the [other projects](https://nanocollective.org) — and contributors who show up now help shape what that becomes.
+
+## Community
+
+The Nano Collective is a community collective building AI tooling for the community, not for profit. We'd love your help.
+
+- **Contribute**: See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+- **The collective**: [nanocollective.org](https://nanocollective.org) · [docs](https://docs.nanocollective.org) · [GitHub](https://github.com/Nano-Collective) · [Discord](https://discord.gg/ktPDV6rekE)
+- **Support the work**: The [Support page](https://docs.nanocollective.org/collective/organisation/support) covers donations and sponsorship.
+- **Paid contribution**: The [Economics Charter](https://docs.nanocollective.org/collective/organisation/economics-charter) sets out how scoped paid bounties work.

@@ -1,0 +1,212 @@
+{
+    "keywords": [
+        {
+            "key": "vibe coding",
+            "description": "氛围编程。指人类只负责提需求和调整情绪，把实际编写和调试代码的工作完全交给 AI 的开发新范式。"
+        },
+        {
+            "key": "ai coding",
+            "description": "AI 编程。AI 辅助或主导编写代码项目的最直观通用统称。"
+        },
+        {
+            "key": "ai programming",
+            "description": "AI 编程开发。常用于学术或更正式的开源 AI 辅助编程项目。"
+        },
+        {
+            "key": "natural language programming",
+            "description": "自然语言编程。探索如何直接通过人类日常语言（人话）来直接生成和运行代码的技术与项目。"
+        },
+        {
+            "key": "prompt driven",
+            "description": "提示词驱动。完全基于 Prompt 逻辑生成并运行独立应用或代码的框架。"
+        },
+        {
+            "key": "prompt engineering",
+            "description": "提示词工程。通过极致优化和设计提示词来引导大模型高保真输出代码的技术。"
+        },
+        {
+            "key": "copilot",
+            "description": "副驾驶。各类自建、开源的类 Copilot 补全工具或独立助手生态。"
+        },
+        {
+            "key": "coding assistant",
+            "description": "编程助手。泛指一切嵌入编辑器或终端中、辅助提升日常开发效率的 AI 工具。"
+        },
+        {
+            "key": "artifacts",
+            "description": "生成物。指 AI 生成的、可独立运行并实时预览的前端代码块或独立功能模块。"
+        },
+        {
+            "key": "ai agent",
+            "description": "AI 智能体。具备自主规划、工具调用和记忆能力的任务执行体通用统称。"
+        },
+        {
+            "key": "llm agent",
+            "description": "大模型智能体。基于大语言模型作为大脑构建的自主决策与执行系统。"
+        },
+        {
+            "key": "coding agent",
+            "description": "编程智能体。专门为了编写、重构和交付代码而设计优化的 Agent 项目。"
+        },
+        {
+            "key": "developer agent",
+            "description": "开发智能体。主打模仿人类软件工程师完整工作流的自动化 Agent 框架。"
+        },
+        {
+            "key": "swe-agent",
+            "description": "软件工程智能体。特指在 SWE-bench 等评测集上表现优异、主打解决硬核工程 Bug 的智能体。"
+        },
+        {
+            "key": "software engineering agent",
+            "description": "软件工程智能体。侧重于解决真实复杂代码仓库、修复实际 GitHub Issues 的大模型应用。"
+        },
+        {
+            "key": "multi-agent",
+            "description": "多智能体。指由多个不同分工的 AI（如前端、测试、Reviewer）协同完成软件开发流程的框架。"
+        },
+        {
+            "key": "agentic",
+            "description": "智能体化。常用于描述具备自主思考和主动调用工具能力的下一代 AI 编程工具。"
+        },
+        {
+            "key": "devin",
+            "description": "全自主 AI 程序员。GitHub 上存在大量模仿其全自主编写项目流程的开源替代品（如 OpenDevin ）。"
+        },
+        {
+            "key": "mcp",
+            "description": "模型上下文协议。Anthropic 推出的开放协议，目前 GitHub 上有海量的 mcp-server 扩展项目。"
+        },
+        {
+            "key": "model context protocol",
+            "description": "模型上下文协议。旨在让 AI 能够标准化、安全地接入本地工具、文件和数据源的全新技术。"
+        },
+        {
+            "key": "function calling",
+            "description": "函数调用。大模型能够根据需求自主选择并调用外部 API 从而影响现实世界的底层技术核心。"
+        },
+        {
+            "key": "tool use",
+            "description": "工具使用。大模型突破纯文本限制，主动调用编译器、终端或浏览器执行任务的能力。"
+        },
+        {
+            "key": "code llm",
+            "description": "代码大模型。针对编程能力进行了深度微调或垂直训练的底层基础/开源大模型。"
+        },
+        {
+            "key": "local llm",
+            "description": "本地大模型。在本地私有化部署并运行代码模型的工具及配套编程插件（如集成 Ollama）。"
+        },
+        {
+            "key": "context window",
+            "description": "上下文窗口。解决如何扩充模型容量，以便让 AI 完美读懂长达万行超大型代码仓库的技术。"
+        },
+        {
+            "key": "rag",
+            "description": "检索增强生成。在编写代码时，通过精准检索本地代码库或最新 API 文档来喂给 AI 的工程技术。"
+        },
+        {
+            "key": "cline",
+            "description": "VS Code 平台极具代表性的自主 Agent 编程插件，支持直接操作文件系统和执行终端命令。"
+        },
+        {
+            "key": "roo-cline",
+            "description": "Cline 插件的流行硬核分支生态，拥有更激进的智能体特性和大量自定义配置项目。"
+        },
+        {
+            "key": "prompt templates",
+            "description": "提示词模板。专注于极限压榨大模型代码逻辑能力、可复用的高质量提示词合集。"
+        },
+        {
+            "key": "system prompt",
+            "description": "系统提示词。赋予大模型特定“高级资深工程师”人设，以提高代码健壮性的基础预设提示词。"
+        },
+        {
+            "key": "skill",
+            "description": "技能。赋予 AI Agent 执行特定专业任务、调用特定 API 的插件化功能模块。"
+        },
+        {
+            "key": "ai skill",
+            "description": "AI 技能。智能体时代的核心概念，指可被 AI 检索并自由组合调用的原子化能力包。"
+        },
+        {
+            "key": "auto debug",
+            "description": "自动调试。捕获终端报错并自动分析、重写并修复代码的自动化脚本或工具。"
+        },
+        {
+            "key": "automated debugging",
+            "description": "自动化调试。研究如何让 AI 接入本地运行环境，实现自我纠错与测试闭环的垂直方向。"
+        },
+        {
+            "key": "code generation",
+            "description": "代码生成。基于特定上下文或需求直接输出结构化代码的通用技术领域。"
+        },
+        {
+            "key": "unit test generation",
+            "description": "单元测试生成。AI 专门读取业务代码并全自动查漏补缺编写单测文件的垂直实用工具。"
+        },
+        {
+            "key": "claude code",
+            "description": "Claude Code 工具。Anthropic 官方推出的颠覆性命令行 AI 编程工具。"
+        },
+        {
+            "key": "claude-code",
+            "description": "Claude 命令行工具。GitHub 上带有此标签的项目多为针对该工具的周边扩展、封装或配置。"
+        },
+        {
+            "key": "opencode",
+            "description": "开源 agent 命令行工具。"
+        },
+        {
+            "key": "agent",
+            "description": "agent"
+        },
+        {
+            "key": "aider",
+            "description": "行业标杆级的开源命令行 AI 编程助手，支持直接在终端与 Git 联动进行深度代码重构。"
+        },
+        {
+            "key": "gpt-engineer",
+            "description": "早期大火的通过一句话提示直接在本地生成一整套包含前后端代码目录树的命令行工具。"
+        },
+        {
+            "key": "mentat",
+            "description": "主打直接在终端对大规模项目进行跨文件代码重构、上下文追踪的开源 AI 编程核心架构。"
+        },
+        {
+            "key": "continue",
+            "description": "Continue 插件。目前最火的、完全开源的 AI 编程助手插件，支持 VS Code 与 JetBrains。"
+        },
+        {
+            "key": "copilot extension",
+            "description": "Copilot 扩展。围绕 GitHub 官方 Copilot 构建的第三方扩展插件与定制化功能。"
+        },
+        {
+            "key": "github copilot workspace",
+            "description": "GitHub 官方工作区概念。社区有很多开源项目在复刻其“基于 Issue 自动化完成 PR”的全流程。"
+        },
+        {
+            "key": "cursor",
+            "description": "AI 原生编辑器的行业领头羊，其技巧、插件和周边配置是当前社区讨论的绝对热点。"
+        },
+        {
+            "key": "windsurf",
+            "description": "主打 Agent 智能体与 Assistant 助手双模式无缝切换的硬核 AI 原生编辑器及其周边生态。"
+        },
+        {
+            "key": "project idx",
+            "description": "谷歌推出的全托管、自带全套 AI 编程能力的云端开发环境。"
+        },
+        {
+            "key": "gitingest",
+            "description": "现象级爆火的开源工具，能一键将任何 GitHub 仓库打包转化成最适合大模型长文本阅读的纯 Markdown 文本。"
+        },
+        {
+            "key": "repomix",
+            "description": "代码库结构与内容打包工具，专门用于将本地多文件代码库压缩以便喂给 LLM。"
+        },
+        {
+            "key": "code2prompt",
+            "description": "代码转提示词工具。将整个源码目录树自动转换为带上下文提示词的开源实用脚本。"
+        }
+    ]
+}

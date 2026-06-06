@@ -1,0 +1,18 @@
+{
+  "github_token": "你的github access key",
+  "keywords": ["vibe coding", "ai coding", "agent", "skill", "mcp server", "claude code", "opencode"],
+  "fetch_top_n": 20,
+  "request_interval": 0.5,
+  "auto_translate": false,
+  "llama_cpp": {
+    "base_url": "http://localhost:9898",
+    "model": "Qwen3.6-35B-A3B",
+    "max_tokens": 153600
+  },
+  "translate_chunk_size": 20000,
+  "max_q_length": 100,
+  "page_size": 80,
+  "min_stars_stop": 1800,
+  "clear_limit_count": 1800,
+  "update_all": false
+}

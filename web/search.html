@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>GitHub Reader - 管理</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>📥 GitHub Reader</h1>
+        <div class="nav">
+            <a href="/">收件箱</a>
+            <a href="/search.html" class="active">管理</a>
+        </div>
+    </div>
+    
+   <div class="toast-container" id="toast-container"></div>
+
+    <div class="container search-page">
+        
+        <!-- 数据统计区 -->
+        <section class="stats-section">
+            <h2>📊 数据库统计</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value" id="stat-total">0</span>
+                    <span class="stat-label">仓库总数</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="stat-read">0</span>
+                    <span class="stat-label">已读数</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="stat-unread">0</span>
+                    <span class="stat-label">未读数</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="stat-max-stars">0</span>
+                    <span class="stat-label">最高星标</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="stat-readme-translated">0</span>
+                    <span class="stat-label">README翻译完成</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="stat-readme-pending">0</span>
+                    <span class="stat-label">README待翻译</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="stat-desc-translated">0</span>
+                    <span class="stat-label">Description翻译完成</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="stat-pending-desc">0</span>
+                    <span class="stat-label">Description待翻译</span>
+                </div>
+            </div>
+        </section>
+
+       <!-- Topics 标签云 -->
+        <section class="topics-section">
+            <h2>🏷️ Topics 标签</h2>
+            <div class="topics-cloud" id="topics-cloud"></div>
+        </section>
+
+        <!-- 操作按钮组 -->
+        <section class="action-section">
+            <h2>⚡ 任务控制</h2>
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="fetch-start-btn" onclick="startFetch()">📥 开始抓取</button>
+                <button class="btn btn-success" id="desc-translate-start-btn" onclick="startTranslateDescriptions()">📋 翻译 Desc</button>
+                <button class="btn btn-success" id="readme-translate-start-btn" onclick="startTranslateReadmes()">📝 翻译 README</button>
+                
+                <button class="btn btn-danger" id="fetch-stop-btn" onclick="stopFetch()">⏹️ 停止抓取</button>
+                <button class="btn btn-danger" id="desc-translate-stop-btn" onclick="stopTranslateDescriptions()">⏹️ 停止翻译Desc</button>
+                <button class="btn btn-danger" id="readme-translate-stop-btn" onclick="stopTranslateReadmes()">⏹️ 停止翻译README</button>
+            </div>
+        </section>
+
+        <!-- 数据库结构说明 -->
+        <section class="db-schema-section">
+            <h2>🗃️ 数据库结构</h2>
+            <table class="schema-table" id="schema-table">
+                <thead>
+                    <tr>
+                        <th>字段名</th>
+                        <th>类型</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody id="schema-tbody"></tbody>
+            </table>
+        </section>
+
+    </div>
+    
+    <script src="/app.js"></script>
+</body>
+</html>

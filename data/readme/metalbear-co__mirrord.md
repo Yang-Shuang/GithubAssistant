@@ -1,0 +1,204 @@
+<div align="center">
+
+![mirrord logo](./images/logo.svg)
+
+</div>
+
+[![Community Slack](https://img.shields.io/badge/Join-e5f7f7?logo=slack&label=Community%20Slack)](https://metalbear.com/slack)
+[![Github CI](https://github.com/metalbear-co/mirrord/actions/workflows/ci.yaml/badge.svg)](https://github.com/metalbear-co/mirrord/actions/workflows/ci.yaml)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/metalbear-co/mirrord/blob/main/LICENSE)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/metalbear-co/mirrord)](https://github.com/metalbear-co/mirrord/releases)
+[![X Follow](https://img.shields.io/twitter/follow/metalbear?style=social)](https://x.com/metalbear)
+
+[mirrord runs your local process inside a live Kubernetes cluster](https://metalbear.com/mirrord/).
+It works the same way for developers and for AI coding agents (Claude Code, Cursor, Codex, Copilot, Windsurf):
+your code runs on your machine, but mirrord routes its traffic, files, and environment variables through a target pod in the cluster.
+
+That covers both halves of the software development loop. Read live cluster context while writing the code (real env vars, real service responses, real queue contents)
+so the change is grounded in what's actually deployed. Then run the code against those same services and data to confirm it works end-to-end.
+
+You get the feedback of a deploy in seconds, without the deploy, and without disrupting the cluster for anyone else.
+mirrord ships as a VS Code extension, IntelliJ plugin, and CLI tool. [Read more](https://metalbear.com/mirrord/docs/overview/introduction/).
+
+**Adopted by**: monday.com, SurveyMonkey, Cadence, CoLab, Daylight Security, Zooplus, and [others](./ADOPTERS.md).
+
+# Contents
+
+- [Contents](#contents)
+  - [Getting Started](#getting-started)
+  - [VS Code Extension](#vs-code-extension)
+    - [Installation](#installation)
+    - [How To Use](#how-to-use)
+  - [IntelliJ Plugin](#intellij-plugin)
+    - [Installation](#installation-1)
+    - [How To Use](#how-to-use-1)
+  - [CLI Tool](#cli-tool)
+    - [Installation](#installation-2)
+    - [How To Use](#how-to-use-2)
+  - [How It Works](#how-it-works)
+    - [Additional capabilities](#additional-capabilities)
+  - [Using mirrord with AI coding agents](#using-mirrord-with-ai-coding-agents)
+  - [FAQ](#faq)
+  - [Contributing](#contributing)
+  - [Help and Community](#help-and-community)
+  - [Code of Conduct](#code-of-conduct)
+  - [License](#license)
+
+---
+
+## Getting Started
+
+- [VS Code Extension](#vs-code-extension)
+- [IntelliJ Plugin](#intellij-plugin)
+- [CLI Tool](#cli-tool)
+
+> mirrord uses your machine's default kubeconfig for access to the Kubernetes API.
+
+---
+
+## VS Code Extension
+
+### Installation
+
+[Get the extension here](https://marketplace.visualstudio.com/items?itemName=MetalBear.mirrord).
+
+### How To Use
+
+- Click "Enable mirrord" on the status bar
+- Start debugging your project
+- Choose pod to impersonate
+- The debugged process will be plugged into the selected pod by mirrord
+
+<p align="center">
+  <img alt="demo of mirrord VSCode extension" src="./images/vscode.gif">
+</p>
+
+---
+
+## IntelliJ Plugin
+
+### Installation
+
+[Get the plugin here](https://plugins.jetbrains.com/plugin/19772-mirrord).
+
+### How To Use
+
+- Click the mirrord icon in the Navigation Toolbar
+- Start debugging your project
+- Choose a namespace and pod to impersonate
+- The debugged process will be plugged into the selected pod by mirrord
+
+<p align="center">
+  <img alt="demo of mirrord IntelliJ plugin" src="./intellij-ext/src/main/resources/META-INF/usage.gif">
+</p>
+
+---
+
+## CLI Tool
+
+### Installation
+
+You can use either
+
+```sh
+brew install metalbear-co/mirrord/mirrord
+```
+
+or
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/metalbear-co/mirrord/main/scripts/install.sh | bash
+```
+
+or using Nix (not official, community maintained):
+
+```sh
+# Using nix-env (legacy)
+nix-env -iA nixpkgs.mirrord
+
+# Using nix profile (recommended)
+nix profile install nixpkgs#mirrord
+```
+
+or on Windows using Chocolatey:
+
+```sh
+choco install --pre mirrord
+```
+
+### How To Use
+
+```sh
+mirrord exec <process command> --target <target-path>
+```
+
+e.g.
+
+```sh
+mirrord exec node app.js --target pod/my-pod
+```
+
+---
+
+## How It Works
+
+When you select a pod to impersonate, mirrord launches a pod on the same node as the pod you selected.
+The new pod is then used to connect your local process and the impersonated pod: it mirrors incoming traffic from the pod to your process,
+routes outgoing traffic from your process through the pod, and does the same for file reads, file writes, and environment variables.
+[You can read more about it here](https://metalbear.com/mirrord/docs/overview/introduction/).
+
+### Additional capabilities
+
+Container run inside the pod launched by mirrord requires additional [Linux capabilities](https://man7.org/linux/man-pages/man7/capabilities.7.html):
+
+- `CAP_NET_ADMIN` and `CAP_NET_RAW` - for modifying routing tables
+- `CAP_SYS_PTRACE` - for reading target pod environment
+- `CAP_SYS_ADMIN` - for joining target pod network namespace
+
+However, you can disable any subset of those in the [configuration](https://metalbear.com/mirrord/docs/reference/configuration/).
+This will possibly limit mirrord functionalities or even make it unusable in some setups.
+
+```bash
+MIRRORD_AGENT_DISABLED_CAPABILITIES=CAP_NET_RAW,CAP_SYS_PTRACE mirrord exec node app.js --target pod/my-pod
+```
+
+<p align="center">
+  <img src="./images/how_it_works.svg" alt="How It Works"/>
+</p>
+
+## Using mirrord with AI coding agents
+
+mirrord works first-class with Claude Code, Cursor, Codex CLI, Gemini CLI, and other AI coding agents,
+letting them run and verify generated code against real cluster services without deploying.
+
+For setup guides and ready-made workflow skills,
+see [metalbear-co/skills](https://github.com/metalbear-co/skills) or the [mirrord for AI Agents](https://metalbear.com/mirrord/ai) page.
+
+## FAQ
+
+[Our FAQ is available here](https://metalbear.com/mirrord/docs/faq/general/).
+If you have a question that's not on there, feel free to ask in our [Discussions](https://github.com/metalbear-co/mirrord/discussions)
+or on [Slack](https://metalbear.com/slack).
+
+## Contributing
+
+Contributions are very welcome.
+Start by checking out our [open issues](https://github.com/metalbear-co/mirrord/issues), and by going through our [contributing guide](CONTRIBUTING.md).
+We're available on [Slack](https://metalbear.com/slack) for any questions.
+
+## Help and Community
+
+Join our [Slack](https://metalbear.com/slack) for questions, support and fun.
+
+We always appreciate hearing how mirrord has made a difference for our users.  
+Check out our [ADOPTERS.md](./ADOPTERS.md) to see how others are using mirrord —  
+and [open a pull request](https://github.com/metalbear-co/mirrord/pulls) to add your organization if you’d like to share how mirrord has been useful to you.
+
+## Code of Conduct
+
+We take our community seriously and we are dedicated to providing a safe and welcoming environment for everyone.
+Please take a few minutes to review our [Code of Conduct](./CODE_OF_CONDUCT.md).
+
+## License
+
+[MIT](./LICENSE)

@@ -1,0 +1,32 @@
+git 初始化的两种方式
+
+直接init
+# 1. 重新初始化
+git init
+
+# 2. 彻底关闭换行符自动转换（核心：防止批量文件在内存流中损坏）
+git config --local core.autocrlf false
+
+# 3. 强制单线程打包（防止 32 线程并发导致磁盘 I/O 锁死）
+git config --local pack.threads 1
+
+# 4. 重新关联你的 GitHub 远程仓库
+git remote add origin git@github.com:Yang-Shuang/github-assistant.git
+
+# 5. 把本地的默认分支改成 main，与云端对齐
+git branch -M main
+
+clone
+到上级目录
+clone git@github.com:Yang-Shuang/github-assistant.git
+
+
+分批提交
+git config --local core.autocrlf false
+git config --local pack.threads 1
+git add data/readmes/[0-9_]*
+git commit -m "更新readme 数字"
+git push
+git add data/readmes/[a-b]*
+git commit -m "更新readme ab"
+git push
