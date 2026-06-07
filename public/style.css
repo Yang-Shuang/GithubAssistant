@@ -473,32 +473,42 @@ body {
         padding: 0 12px;
     }
     
-    /* Mobile header - vertical stacking via column layout */
+   /* Mobile header - logo + sort in row, search wraps */
     .header-inner {
+        flex-wrap: wrap !important;
         height: auto !important;
-        flex-direction: column !important;
-        align-items: stretch !important;
+        align-items: center !important;
     }
     
     .logo, .detail-title {
         font-size: 16px;
     }
     
-    /* Sort buttons on their own row, centered */
-    .header-inner .sort-btn-group {
-        justify-content: center !important;
-        margin-top: 8px;
+    /* Sort buttons stay inline with logo */
+    .sort-btn-group {
+        margin-top: 0;
     }
     
-    /* Search bar - full width with input + button inline */
+    /* Search bar on its own row, full width */
     .search-bar-wrapper {
-        padding-top: 4px;
+        flex: 1 1 100% !important;
+        padding-top: 8px;
+        justify-content: center !important;
     }
     
-    #search-input {
-        height: 32px;
-        flex: 1 1 auto !important;
-        max-width: none !important;
+    /* Mobile repo item - vertical stacking */
+    .repo-item {
+        display: block !important;
+    }
+    
+    .repo-info {
+        margin-bottom: 8px;
+    }
+    
+    .repo-meta {
+        justify-content: flex-end !important;
+        padding-top: 4px;
+        border-top: 1px solid #f3f4f6;
     }
     
     #search-btn {
