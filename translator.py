@@ -56,7 +56,7 @@ def call_llm(text, max_retries=3):
         'max_tokens': config.get('llama_cpp', {}).get('max_tokens', 4096)
     }
     
-    timeout_sec = llama_config.get('timeout', 1800)  # 默认30分钟，支持大文件翻译
+    timeout_sec = llama_config.get('timeout', 3600)  # 默认60分钟，支持大文件翻译
     
     for attempt in range(max_retries):
         try:
