@@ -102,8 +102,8 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
     
     if (!container) return;
     
-    // === 如果 filter/sort/searchKeyword 变化，重新拉取 API 数据 ===
-    const needsRefresh = (_currentFilter !== filter || _currentSortBy !== sort_by);
+   // === 如果 filter/sort/searchKeyword 变化或数据未缓存，重新拉取 API 数据 ===
+    const needsRefresh = (_cachedRepos.length === 0 || _currentFilter !== filter || _currentSortBy !== sort_by);
     const keywordChanged = _currentUserKeyword !== searchKeyword;
     
     if (needsRefresh || keywordChanged) {
