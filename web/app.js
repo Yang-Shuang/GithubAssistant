@@ -1,5 +1,24 @@
 const API_BASE = '/api';
 
+// === Search Filter Helper ===
+function matchesSearch(repo, keyword) {
+    if (!keyword.trim()) return true; // 空关键词 → 全部通过
+    
+    const q = keyword.toLowerCase().trim();
+    
+    let fields = '';
+    fields += repo.full_name || '';
+    fields += ' ' + (repo.description || '');
+    fields += ' ' + (repo.description_zh || '');
+    fields += ' ' + (repo.language || '');
+    
+    if (Array.isArray(repo.topics)) {
+        fields += ' ' + repo.topics.join(' ');
+    }
+    
+    return fields.toLowerCase().includes(q);
+}
+
 async function apiGet(path, params = {}) {
     const url = new URL(`${API_BASE}${path}`, window.location.origin);
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
@@ -65,8 +84,8 @@ function showStopToast(type) {
 }
 
 // Index page
-async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_order = 'desc') {
-    const data = await apiGet('/repos', {filter, page, page_size: 20, sort_by, sort_order});
+async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_order = 'desc', searchKeyword = '') {
+    const data = await apiGet('/repos', {filter, page, page_size: 99999, sort_by, sort_order});
     const container = document.getElementById('repo-list');
     const unreadCount = document.getElementById('unread-count');
     
@@ -77,10 +96,29 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
     
     if (!container) return;
     
-    container.innerHTML = data.repos.map(repo => {
+    // === 前端关键词过滤 ===
+    let filteredList = data.repos.filter(repo => matchesSearch(repo, searchKeyword));
+    
+    // === 分页切片 ===
+    const pageSize = 20;
+    const totalPages = Math.ceil(filteredList.length / pageSize);
+    const offset = (page - 1) * pageSize;
+    const pageData = filteredList.slice(offset, offset + pageSize);
+    
+    if (!filteredList.length) {
+        container.innerHTML = '<div class="loading">暂无匹配结果</div>';
+        return;
+    }
+    
+    // === 渲染列表（带角标）===
+    let globalIndex = 1; // 每页从 1 开始
+    
+    const html = pageData.map(repo => {
+        const indexNum = globalIndex++;
         const topicsHtml = (repo.topics || []).map(t => `<span class="topic-tag">${t}</span>`).join(' ');
         return `
         <div class="repo-item ${repo.is_read ? 'read' : 'unread'}" data-id="${repo.id}">
+            <div class="index-badge">${indexNum}</div>
             <div class="repo-info">
                 <div class="repo-name">${repo.full_name}</div>
                 <div class="repo-desc">${repo.description || '暂无描述'}</div>
@@ -98,6 +136,8 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
     `;
     }).join('');
     
+    container.innerHTML = html;
+    
     // 添加点击事件打开新窗口
     container.querySelectorAll('.repo-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -106,8 +146,7 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
         });
     });
     
-    // Pagination with ellipsis for large page counts
-    const totalPages = Math.ceil(data.total / data.page_size);
+    // === 渲染分页控件（基于过滤后总数）===
     const pagination = document.getElementById('pagination');
     if (pagination && totalPages > 1) {
         pagination.innerHTML = '';
@@ -122,7 +161,11 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
                 btn.style.background = '#f5f5f5';
                 btn.style.borderColor = '#e0e0e0';
             } else {
-                btn.onclick = () => loadRepos(filter, num, sort_by, sort_order);
+                const savedFilter = filter;
+                const savedSortBy = sort_by;
+                const savedSortOrder = sort_order;
+                const savedKeyword = searchKeyword;
+                btn.onclick = () => loadRepos(savedFilter, num, savedSortBy, savedSortOrder, savedKeyword);
             }
             pagination.appendChild(btn);
         }
@@ -163,7 +206,11 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
         prevBtn.className = '';
         prevBtn.disabled = page === 1;
         if (page > 1) {
-            prevBtn.onclick = () => loadRepos(filter, page - 1, sort_by, sort_order);
+            const savedFilter = filter;
+            const savedSortBy = sort_by;
+            const savedSortOrder = sort_order;
+            const savedKeyword = searchKeyword;
+            prevBtn.onclick = () => loadRepos(savedFilter, page - 1, savedSortBy, savedSortOrder, savedKeyword);
         } else {
             prevBtn.style.opacity = '0.5';
             prevBtn.style.cursor = 'not-allowed';
@@ -178,7 +225,11 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
         nextBtn.className = '';
         nextBtn.disabled = page === totalPages;
         if (page < totalPages) {
-            nextBtn.onclick = () => loadRepos(filter, page + 1, sort_by, sort_order);
+            const savedFilter = filter;
+            const savedSortBy = sort_by;
+            const savedSortOrder = sort_order;
+            const savedKeyword = searchKeyword;
+            nextBtn.onclick = () => loadRepos(savedFilter, page + 1, savedSortBy, savedSortOrder, savedKeyword);
         } else {
             nextBtn.style.opacity = '0.5';
             nextBtn.style.cursor = 'not-allowed';
@@ -186,7 +237,7 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
         pagination.appendChild(nextBtn);
     }
     
-    // 更新按钮高亮状态
+    // 更新按钮高亮状态（不携带搜索关键词）
     updateActiveButtons(filter, sort_by, sort_order);
 }
 
@@ -874,6 +925,40 @@ async function pollTaskUntilDone(checkRunning, restoreTextFn, runningTextCb) {
 // Init
 if (document.getElementById('repo-list')) {
     loadRepos();
+    
+    // === Search Bar Event Listeners ===
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    
+    if (searchBtn && searchInput) {
+        const handleSearch = () => {
+            const keyword = searchInput.value.trim();
+            // 获取当前筛选/排序状态（从 DOM 读取活跃按钮）
+            let filter = 'all';
+            const activeFilterBtn = document.querySelector('.filter-btn.active');
+            if (activeFilterBtn) {
+                if (activeFilterBtn.id === 'filter-read') filter = 'read';
+                else if (activeFilterBtn.id === 'filter-unread') filter = 'unread';
+            }
+            
+            // 获取当前排序状态
+            let sort_by = 'fetched_at', sort_order = 'desc';
+            if (document.getElementById('sort-stars').classList.contains('active')) {
+                sort_by = 'stars'; sort_order = 'desc';
+            } else if (document.getElementById('sort-time-asc').classList.contains('active')) {
+                sort_by = 'fetched_at'; sort_order = 'asc';
+            }
+            
+            loadRepos(filter, 1, sort_by, sort_order, keyword); // 重置到第 1 页
+        };
+        
+        searchBtn.onclick = handleSearch;
+        
+        searchInput.onkeydown = (e) => {
+            if (e.key === 'Enter') handleSearch();
+        };
+    }
+    
     document.getElementById('filter-all').onclick = () => loadRepos('all', 1, 'fetched_at', 'desc');
     document.getElementById('filter-read').onclick = () => loadRepos('read', 1, 'fetched_at', 'desc');
     document.getElementById('filter-unread').onclick = () => loadRepos('unread', 1, 'fetched_at', 'desc');
