@@ -83,9 +83,15 @@ function showStopToast(type) {
     showToast('⏹️ README翻译停止信号已发送', 'info');
 }
 
-// Index page
+// Index page — global state for caching/filtering/pagination
+let _cachedRepos = [];       // API 原始数据缓存
+let _filteredRepos = [];     // 关键词过滤后数据
+let _currentFilter = 'all';
+let _currentPage = 1;
+let _currentSortBy = 'fetched_at';
+let _currentUserKeyword = '';
+
 async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_order = 'desc', searchKeyword = '') {
-    const data = await apiGet('/repos', {filter, page, page_size: 99999, sort_by, sort_order});
     const container = document.getElementById('repo-list');
     const unreadCount = document.getElementById('unread-count');
     
@@ -96,14 +102,42 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
     
     if (!container) return;
     
-    // === 前端关键词过滤 ===
-    let filteredList = data.repos.filter(repo => matchesSearch(repo, searchKeyword));
+    // === 如果 filter/sort/searchKeyword 变化，重新拉取 API 数据 ===
+    const needsRefresh = (_currentFilter !== filter || _currentSortBy !== sort_by);
+    const keywordChanged = _currentUserKeyword !== searchKeyword;
     
-    // === 分页切片 ===
+    if (needsRefresh || keywordChanged) {
+        // 更新缓存状态并重置页码
+        _currentFilter = filter;
+        
+        let data;
+        try {
+            data = await apiGet('/repos', {filter, page: 1, page_size: 99999, sort_by, sort_order});
+        } catch (e) {
+            container.innerHTML = '<div class="loading">加载失败</div>';
+            return;
+        }
+        
+        _cachedRepos = data.repos || [];
+        _currentUserKeyword = searchKeyword;
+        
+        // === 前端关键词过滤 ===
+        _filteredRepos = _cachedRepos.filter(repo => matchesSearch(repo, searchKeyword));
+        
+        if (!_filteredRepos.length) {
+            container.innerHTML = '<div class="loading">暂无匹配结果</div>';
+            document.getElementById('pagination').innerHTML = '';
+            return;
+        }
+    } else {
+        // filter/sort 未变，直接基于已缓存数据渲染当前页（不重新请求 API）
+        _currentPage = page;
+    }
+    
     const pageSize = 20;
-    const totalPages = Math.ceil(filteredList.length / pageSize);
+    const totalPages = Math.ceil(_filteredRepos.length / pageSize);
     const offset = (page - 1) * pageSize;
-    const pageData = filteredList.slice(offset, offset + pageSize);
+    const pageData = _filteredRepos.slice(offset, offset + pageSize);
     
     if (!filteredList.length) {
         container.innerHTML = '<div class="loading">暂无匹配结果</div>';
@@ -154,18 +188,17 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
         function createPageBtn(num, text) {
             const btn = document.createElement('button');
             btn.textContent = text || num;
-            btn.className = num === page ? 'active' : '';
+            btn.className = num === _currentPage ? 'active' : '';
             if (text !== undefined && text !== null) {
                 btn.disabled = true;
                 btn.style.cursor = 'default';
                 btn.style.background = '#f5f5f5';
                 btn.style.borderColor = '#e0e0e0';
             } else {
-                const savedFilter = filter;
-                const savedSortBy = sort_by;
-                const savedSortOrder = sort_order;
-                const savedKeyword = searchKeyword;
-                btn.onclick = () => loadRepos(savedFilter, num, savedSortBy, savedSortOrder, savedKeyword);
+                const savedFilter = _currentFilter;
+                const savedSortBy = _currentSortBy;
+                const savedKeyword = _currentUserKeyword;
+                btn.onclick = () => loadRepos(savedFilter, num, savedSortBy, 'desc', savedKeyword);
             }
             pagination.appendChild(btn);
         }
@@ -177,8 +210,8 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
             for (let i = 1; i <= totalPages; i++) pages.push(i);
         } else {
             const half = Math.floor(maxVisible / 2);
-            let start = page - half;
-            let end = page + half;
+            let start = _currentPage - half;
+            let end = _currentPage + half;
             
             if (start < 1) {
                 start = 1;
@@ -204,13 +237,12 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
         const prevBtn = document.createElement('button');
         prevBtn.textContent = '‹';
         prevBtn.className = '';
-        prevBtn.disabled = page === 1;
-        if (page > 1) {
-            const savedFilter = filter;
-            const savedSortBy = sort_by;
-            const savedSortOrder = sort_order;
-            const savedKeyword = searchKeyword;
-            prevBtn.onclick = () => loadRepos(savedFilter, page - 1, savedSortBy, savedSortOrder, savedKeyword);
+        prevBtn.disabled = _currentPage === 1;
+        if (_currentPage > 1) {
+            const savedFilter = _currentFilter;
+            const savedSortBy = _currentSortBy;
+            const savedKeyword = _currentUserKeyword;
+            prevBtn.onclick = () => loadRepos(savedFilter, _currentPage - 1, savedSortBy, 'desc', savedKeyword);
         } else {
             prevBtn.style.opacity = '0.5';
             prevBtn.style.cursor = 'not-allowed';
@@ -223,13 +255,12 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
         const nextBtn = document.createElement('button');
         nextBtn.textContent = '›';
         nextBtn.className = '';
-        nextBtn.disabled = page === totalPages;
-        if (page < totalPages) {
-            const savedFilter = filter;
-            const savedSortBy = sort_by;
-            const savedSortOrder = sort_order;
-            const savedKeyword = searchKeyword;
-            nextBtn.onclick = () => loadRepos(savedFilter, page + 1, savedSortBy, savedSortOrder, savedKeyword);
+        nextBtn.disabled = _currentPage === totalPages;
+        if (_currentPage < totalPages) {
+            const savedFilter = _currentFilter;
+            const savedSortBy = _currentSortBy;
+            const savedKeyword = _currentUserKeyword;
+            nextBtn.onclick = () => loadRepos(savedFilter, _currentPage + 1, savedSortBy, 'desc', savedKeyword);
         } else {
             nextBtn.style.opacity = '0.5';
             nextBtn.style.cursor = 'not-allowed';
@@ -949,7 +980,8 @@ if (document.getElementById('repo-list')) {
                 sort_by = 'fetched_at'; sort_order = 'asc';
             }
             
-            loadRepos(filter, 1, sort_by, sort_order, keyword); // 重置到第 1 页
+            _currentPage = 1; // 搜索重置页码
+            loadRepos(filter, 1, sort_by, sort_order, keyword);
         };
         
         searchBtn.onclick = handleSearch;
@@ -963,10 +995,10 @@ if (document.getElementById('repo-list')) {
     document.getElementById('filter-read').onclick = () => loadRepos('read', 1, 'fetched_at', 'desc');
     document.getElementById('filter-unread').onclick = () => loadRepos('unread', 1, 'fetched_at', 'desc');
     
-    // Sort buttons
-    document.getElementById('sort-time').onclick = () => loadRepos('all', 1, 'fetched_at', 'desc');
-    document.getElementById('sort-time-asc').onclick = () => loadRepos('all', 1, 'fetched_at', 'asc');
-    document.getElementById('sort-stars').onclick = () => loadRepos('all', 1, 'stars', 'desc');
+    // Sort buttons — pass current search keyword so it persists across sort changes
+    document.getElementById('sort-time').onclick = () => { _currentPage = 1; loadRepos(_currentFilter || 'all', 1, 'fetched_at', 'desc', _currentUserKeyword); };
+    document.getElementById('sort-time-asc').onclick = () => { _currentPage = 1; loadRepos(_currentFilter || 'all', 1, 'fetched_at', 'asc', _currentUserKeyword); };
+    document.getElementById('sort-stars').onclick = () => { _currentPage = 1; loadRepos(_currentFilter || 'all', 1, 'stars', 'desc', _currentUserKeyword); };
     
     // Description translation buttons (inbox page)
     const descBtn = document.getElementById('translate-desc-btn');
