@@ -2,6 +2,51 @@
 
 const PAGE_SIZE = 80; // 每页显示数量（config.json配置）
 
+// === Global Cache & Filter State ===
+let _cachedRepos = [];
+let _filteredRepos = [];
+let _currentSearchKeyword = '';
+
+function matchesSearch(repo) {
+    if (!_currentSearchKeyword.trim()) return true;
+    
+    const q = _currentSearchKeyword.toLowerCase().trim();
+    
+    let fields = '';
+    fields += repo.full_name || '';
+    fields += ' ' + (repo.description || '');
+    fields += ' ' + (repo.description_zh || '');
+    fields += ' ' + (repo.language || '');
+    
+    if (Array.isArray(repo.topics)) {
+        fields += ' ' + repo.topics.join(' ');
+    }
+    
+    return fields.toLowerCase().includes(q);
+}
+
+function applyFilterAndSort() {
+    _filteredRepos = _cachedRepos.filter(matchesSearch);
+    
+    const params = getUrlParams();
+    if (params.sortBy === 'stars') {
+        _filteredRepos.sort((a, b) => 
+            params.sortOrder === 'desc' ? b.stars - a.stars : a.stars - b.stars
+        );
+    } else if (params.sortBy === 'fetched_at') {
+        _filteredRepos.sort((a, b) => 
+            params.sortOrder === 'desc' 
+                ? new Date(b.fetched_at) - new Date(a.fetched_at) 
+                : new Date(a.fetched_at) - new Date(b.fetched_at)
+        );
+    }
+}
+
+function resetSearch() {
+    _currentSearchKeyword = '';
+    applyFilterAndSort();
+}
+
 // URL参数解析工具函数
 function getUrlParams() {
     const params = new URLSearchParams(window.location.search);
@@ -33,42 +78,45 @@ async function loadRepos(page = 1, sortBy = 'fetched_at', sortOrder = 'desc') {
     }
     
     try {
-        // 加载repos.json数据
-        const response = await fetch('./data/repos.json');
-        let repos = await response.json();
-        
-        // 排序处理
-        if (sortBy === 'stars') {
-            repos.sort((a, b) => sortOrder === 'desc' ? b.stars - a.stars : a.stars - b.stars);
-        } else if (sortBy === 'fetched_at') {
-            repos.sort((a, b) => sortOrder === 'desc' ? new Date(b.fetched_at) - new Date(a.fetched_at) : new Date(a.fetched_at) - new Date(b.fetched_at));
+        // 首次加载：从 JSON 读取数据并缓存
+        if (_cachedRepos.length === 0) {
+            const response = await fetch('./data/repos.json');
+            _cachedRepos = await response.json();
         }
         
-        // 分页处理
-        const totalPages = Math.ceil(repos.length / PAGE_SIZE);
+        // 应用过滤 + 排序（前端操作，不发请求）
+        applyFilterAndSort();
+        
+        // 分页处理：基于全局连续索引
+        const totalPages = Math.ceil(_filteredRepos.length / PAGE_SIZE);
         const startIdx = (page - 1) * PAGE_SIZE;
-        const endIdx = Math.min(startIdx + PAGE_SIZE, repos.length);
-        const pageRepos = repos.slice(startIdx, endIdx);
+        const endIdx = Math.min(startIdx + PAGE_SIZE, _filteredRepos.length);
+        const pageRepos = _filteredRepos.slice(startIdx, endIdx);
         
         // 渲染列表项
         if (listContainer) {
             listContainer.innerHTML = '';
             
-            if (pageRepos.length === 0) {
+            if (_filteredRepos.length === 0) {
                 listContainer.innerHTML = '<div class="empty">暂无数据</div>';
+            } else if (pageRepos.length === 0) {
+                listContainer.innerHTML = '<div class="empty">该页无数据</div>';
             } else {
-                pageRepos.forEach(repo => {
+                pageRepos.forEach((repo, idx) => {
+                    const globalIndex = startIdx + idx + 1;
                     const itemEl = document.createElement('div');
                     itemEl.className = 'repo-item';
                     
-                    // 生成topics标签HTML
                     let topicsHtml = '';
                     if (repo.topics && repo.topics.length > 0) {
-                        topicsHtml = `<div class="repo-topics">${repo.topics.map(t => `<span class="topic-tag">${t}</span>`).join('')}</div>`;
+                        topicsHtml = `<div class="repo-topics">${repo.topics.map(t => 
+                            `<span class="topic-tag">${t}</span>`
+                        ).join('')}</div>`;
                     }
                     
                     itemEl.innerHTML = `
                         <div class="repo-info">
+                            <span class="index-badge">[${globalIndex}]</span>
                             <a href="detail.html?id=${repo.id}" class="repo-name-link" title="${repo.full_name}">
                                 ${repo.full_name}
                             </a>
@@ -87,10 +135,10 @@ async function loadRepos(page = 1, sortBy = 'fetched_at', sortOrder = 'desc') {
             }
         }
         
-        // 渲染分页组件
+        // 渲染分页组件（传入过滤后的总页数）
         renderPagination(totalPages, page);
         
-        // 更新排序按钮状态（每次加载数据后同步UI）
+        // 更新排序按钮状态
         updateSortButtonStates(sortBy, sortOrder);
         
     } catch (error) {
@@ -118,13 +166,14 @@ function renderPagination(totalPages, currentPage) {
     }
     
     let buttonsHtml = '';
+    const currentSortBy = getUrlParams().sortBy;
+    const currentSortOrder = getUrlParams().sortOrder;
     
-    // 显示全部页码（CSS已设置flex-wrap: wrap自动换行）
     for (let i = 1; i <= totalPages; i++) {
         if (i === currentPage) {
             buttonsHtml += `<button class="active">${i}</button>`;
         } else {
-            buttonsHtml += `<button onclick="loadRepos(${i}, '${getUrlParams().sortBy}', '${getUrlParams().sortOrder}')">${i}</button>`;
+            buttonsHtml += `<button onclick="loadRepos(${i}, '${currentSortBy}', '${currentSortOrder}')">${i}</button>`;
         }
     }
     
@@ -176,6 +225,28 @@ function initSortButtons() {
     });
     
     sortButtonsBound = true; // 标记已绑定
+}
+
+// === Search Event Binding ===
+function initSearch() {
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    
+    if (!searchInput || !searchBtn) return;
+    
+    searchBtn.addEventListener('click', () => {
+        _currentSearchKeyword = searchInput.value.trim();
+        updateUrlParams({ page: 1 });
+        loadRepos(1, getUrlParams().sortBy, getUrlParams().sortOrder);
+        
+        searchInput.blur();
+    });
+    
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            searchBtn.click();
+        }
+    });
 }
 
 // === 详情页逻辑 ===
@@ -346,9 +417,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('repo-name').textContent = '无效ID';
         }
     } else {
-        // 列表页：加载仓库数据并初始化排序按钮
         loadRepos(params.page, params.sortBy, params.sortOrder);
         initSortButtons();
+        initSearch();
     }
 });
 

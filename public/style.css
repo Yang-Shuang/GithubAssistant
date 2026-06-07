@@ -83,6 +83,48 @@ body {
     border-color: #0366d6;
 }
 
+/* === Search Bar Styles === */
+.search-bar-wrapper {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding-bottom: 8px;
+}
+
+#search-input {
+    width: 360px;
+    max-width: calc(100vw - 32px);
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+#search-input:focus {
+    border-color: #0366d6;
+}
+
+#search-btn {
+    height: 34px;
+    padding: 0 16px;
+    border: 1px solid #0366d6;
+    background-color: #0366d6;
+    color: #fff;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#search-btn:hover {
+    background-color: #0256b9;
+    border-color: #0256b9;
+}
+
 /* === Pagination Styles === */
 .pagination {
     display: flex;
@@ -152,9 +194,33 @@ body {
     background-color: #f9fafb;
 }
 
+/* === Index Badge Styles === */
+.index-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 16px;
+    padding: 0 4px;
+    background: #2d3748;
+    color: #e2e8f0;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 16px;
+    flex-shrink: 0;
+}
+
 .repo-info {
-    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     min-width: 0;
+}
+
+.repo-desc, .repo-topics {
+    width: 100%;
+    margin-top: 4px;
 }
 
 a.repo-name-link {
@@ -447,6 +513,18 @@ a.repo-name-link:hover {
     
     .readme-content {
         padding: 16px;
+    }
+    
+    .search-bar-wrapper {
+        flex-wrap: wrap;
+    }
+    
+    #search-input {
+        width: calc(100% - 24px);
+    }
+    
+    #search-btn {
+        margin-left: auto;
     }
 }
 
