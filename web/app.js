@@ -270,6 +270,9 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
     
     // 更新按钮高亮状态（不携带搜索关键词）
     updateActiveButtons(filter, sort_by, sort_order);
+    
+    // === 翻页/搜索后回到顶部 ===
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function updateActiveButtons(filter, sort_by, sort_order) {
