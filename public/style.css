@@ -212,31 +212,27 @@ body {
 }
 
 .repo-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    flex: 1;
     min-width: 0;
 }
 
-.repo-desc, .repo-topics {
-    width: 100%;
-    margin-top: 4px;
-}
-
 a.repo-name-link {
-    display: block;
-    font-size: 16px;
-    font-weight: 500;
-    color: #0366d6;
+    display: inline;
     text-decoration: none;
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    color: #0366d6;
+    font-weight: 500;
+    font-size: 16px;
 }
 
 a.repo-name-link:hover {
     text-decoration: underline;
+}
+
+#badge-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
 }
 
 .repo-desc {
@@ -255,6 +251,8 @@ a.repo-name-link:hover {
     gap: 4px;
     margin-top: 6px;
 }
+
+
 
 .topic-tag {
     display: inline-block;

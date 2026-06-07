@@ -116,10 +116,10 @@ async function loadRepos(page = 1, sortBy = 'fetched_at', sortOrder = 'desc') {
                     
                     itemEl.innerHTML = `
                         <div class="repo-info">
-                            <span class="index-badge">[${globalIndex}]</span>
-                            <a href="detail.html?id=${repo.id}" class="repo-name-link" title="${repo.full_name}">
-                                ${repo.full_name}
-                            </a>
+                            <span id="badge-name-row" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                                <span class="index-badge">[${globalIndex}]</span>
+                                <a href="detail.html?id=${repo.id}" title="${repo.full_name}">${repo.full_name}</a>
+                            </span>
                             <div class="repo-desc">${getCurrentDesc(repo) || '暂无描述'}</div>
                             ${topicsHtml}
                         </div>
