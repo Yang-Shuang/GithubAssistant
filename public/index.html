@@ -11,15 +11,17 @@
     <header class="header">
         <div class="container header-content">
             <a href="./index.html" class="logo">📚Repos</a>
-            <div class="sort-btn-group" id="sort-buttons">
-                <button class="sort-btn active" data-sort-by="fetched_at" data-sort-order="desc">最新抓取</button>
-                <button class="sort-btn" data-sort-by="fetched_at" data-sort-order="asc">最早抓取</button>
-                <button class="sort-btn" data-sort-by="stars" data-sort-order="desc">最多星标</button>
+            <div class="header-right">
+                <div class="sort-btn-group" id="sort-buttons">
+                    <button class="sort-btn active" data-sort-by="fetched_at" data-sort-order="desc">最新抓取</button>
+                    <button class="sort-btn" data-sort-by="fetched_at" data-sort-order="asc">最早抓取</button>
+                    <button class="sort-btn" data-sort-by="stars" data-sort-order="desc">最多星标</button>
+                </div>
+                <div class="search-bar-wrapper">
+                    <input type="text" id="search-input" placeholder="关键词检索..." autocomplete="off">
+                    <button id="search-btn">检索</button>
+                </div>
             </div>
-        </div>
-        <div class="search-bar-wrapper">
-            <input type="text" id="search-input" placeholder="关键词检索..." autocomplete="off">
-            <button id="search-btn">检索</button>
         </div>
     </header>
 
