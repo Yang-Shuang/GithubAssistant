@@ -216,16 +216,16 @@ body {
     min-width: 0;
 }
 
-a.repo-name-link {
+#badge-name-row a {
     display: inline;
     text-decoration: none;
-    color: #0366d6;
-    font-weight: 500;
+    color: #111827;
+    font-weight: 600;
     font-size: 16px;
 }
 
-a.repo-name-link:hover {
-    text-decoration: underline;
+#badge-name-row a:hover {
+    text-decoration: none;
 }
 
 #badge-name-row {
