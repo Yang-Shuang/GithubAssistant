@@ -139,7 +139,7 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
     const offset = (page - 1) * pageSize;
     const pageData = _filteredRepos.slice(offset, offset + pageSize);
     
-    if (!filteredList.length) {
+    if (!_filteredRepos.length) {
         container.innerHTML = '<div class="loading">暂无匹配结果</div>';
         return;
     }
