@@ -145,16 +145,18 @@ async function loadRepos(filter = 'all', page = 1, sort_by = 'fetched_at', sort_
     }
     
     // === 渲染列表（带角标）===
-    let globalIndex = 1; // 每页从 1 开始
+    const startIndex = offset + 1;
     
-    const html = pageData.map(repo => {
-        const indexNum = globalIndex++;
+    const html = pageData.map((repo, i) => {
+        const indexNum = startIndex + i;
         const topicsHtml = (repo.topics || []).map(t => `<span class="topic-tag">${t}</span>`).join(' ');
         return `
         <div class="repo-item ${repo.is_read ? 'read' : 'unread'}" data-id="${repo.id}">
-            <div class="index-badge">${indexNum}</div>
             <div class="repo-info">
-                <div class="repo-name">${repo.full_name}</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="index-badge">${indexNum}</span>
+                    <div class="repo-name">${repo.full_name}</div>
+                </div>
                 <div class="repo-desc">${repo.description || '暂无描述'}</div>
                 ${topicsHtml ? `<div class="repo-topics">${topicsHtml}</div>` : ''}
                 ${repo.description_zh ? `<div class="repo-desc-zh">${repo.description_zh}</div>` : ''}
