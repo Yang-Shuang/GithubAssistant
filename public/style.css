@@ -30,7 +30,7 @@ body {
     z-index: 100;
 }
 
-.header-content {
+.header-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -42,6 +42,7 @@ body {
     font-weight: 600;
     color: #0366d6;
     text-decoration: none;
+    flex-shrink: 0;
 }
 
 .back-link {
@@ -54,8 +55,8 @@ body {
     font-size: 15px;
 }
 
-/* === Sort Bar Styles (now in header) === */
-.header-content .sort-btn-group {
+/* === Sort Bar Styles (in header) === */
+.header-inner .sort-btn-group {
     display: flex;
     gap: 8px;
     align-items: center;
@@ -83,17 +84,15 @@ body {
     border-color: #0366d6;
 }
 
-/* === Search Bar Styles === */
+/* === Search Bar Styles (inline in header) === */
 .search-bar-wrapper {
     display: flex;
-    justify-content: center;
     align-items: center;
     gap: 8px;
-    padding-top: 12px;
 }
 
 #search-input {
-    width: 360px;
+    width: 240px;
     max-width: calc(100vw - 32px);
     height: 34px;
     padding: 0 12px;
@@ -476,64 +475,32 @@ body {
         padding: 0 12px;
     }
     
-    .header-content {
-        height: 56px;
+    /* Mobile header - stack elements vertically */
+    .header-inner {
+        height: auto;
+        min-height: unset;
+        flex-wrap: wrap;
     }
     
     .logo, .detail-title {
         font-size: 16px;
     }
     
+    /* Sort buttons on their own row, centered */
     .sort-btn-group {
-        flex-wrap: wrap;
-    }
-    
-    .repo-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    
-    .repo-meta {
-        margin-left: 0;
-        padding-left: 0;
         width: 100%;
-        justify-content: space-between;
-    }
-    
-    .info-card {
-        padding: 16px;
-    }
-    
-    .readme-tabs {
-        flex-wrap: wrap;
-    }
-    
-    .readme-content {
-        padding: 16px;
-    }
-    
-    /* Mobile: sort buttons wrap to second line */
-    .sort-btn-group {
-        flex-wrap: wrap;
-        gap: 4px;
-    }
-    
-    .header-content {
-        height: auto;
-        min-height: 52px;
-    }
-    
-    /* Mobile search bar - same row as buttons, centered */
-    .search-bar-wrapper {
         justify-content: center;
-        padding-top: 8px;
+        margin-top: 8px;
+    }
+    
+    /* Search bar inline (input + button), full width */
+    .search-bar-wrapper {
+        flex: 1 1 100%;
+        padding-top: 4px;
     }
     
     #search-input {
-        width: auto;
-        min-width: 140px;
-        max-width: calc(50vw - 24px);
+        min-width: 0;
         height: 32px;
     }
     
